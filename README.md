@@ -1,4 +1,4 @@
-# Slab & Ledger — Card Business Dashboard
+# TyCo's Cardbiz — Dashboard
 
 A live P&L dashboard for your sports card buying/selling business: purchases, listings, sales,
 on-hand inventory value, and cash in hand — with eBay CSV import for the ~90% of activity that
