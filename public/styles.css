@@ -73,6 +73,19 @@ body {
 }
 .tab:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
 
+.export-link {
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid rgba(198,161,91,0.35);
+  padding: 8px 14px;
+  border-radius: 999px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+.export-link:hover { color: var(--ink); background: var(--gold); border-color: var(--gold); }
+
 /* ---------- Layout ---------- */
 main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
 .view { display: none; }

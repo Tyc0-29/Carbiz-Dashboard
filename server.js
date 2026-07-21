@@ -293,6 +293,15 @@ app.post('/api/import', async (req, res) => {
   res.json({ ok: true, created });
 });
 
+// ---------- EXPORT (backup) ----------
+app.get('/api/export', (req, res) => {
+  const db = readDb();
+  const stamp = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Disposition', `attachment; filename="cardbiz-backup-${stamp}.json"`);
+  res.setHeader('Content-Type', 'application/json');
+  res.send(JSON.stringify(db, null, 2));
+});
+
 // ---------- DASHBOARD ----------
 app.get('/api/dashboard', (req, res) => {
   const db = readDb();
