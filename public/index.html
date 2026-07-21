@@ -80,11 +80,15 @@
   <section class="view" id="view-inventory">
     <div class="panel">
       <h3>Add a purchase</h3>
+      <label class="checkbox-label">
+        <input type="checkbox" id="already-owned" />
+        Already owned this — didn't pay cash for it (gift, trade, had it before tracking)
+      </label>
       <form id="form-card" class="form-grid">
         <input type="text" name="player" placeholder="Player / card name" required />
         <input type="text" name="sport" placeholder="Sport (MLB, NFL, WNBA...)" />
         <input type="date" name="purchaseDate" required />
-        <input type="number" step="0.01" name="cost" placeholder="Cost ($)" required />
+        <input type="number" step="0.01" name="cost" id="card-cost" placeholder="Cost ($)" required />
         <input type="text" name="source" placeholder="Source (eBay, show, trade...)" />
         <input type="text" name="notes" placeholder="Notes" />
         <button type="submit" class="btn-primary">Add card</button>
@@ -121,13 +125,18 @@
       <h3>Record a sale</h3>
       <p class="hint">Fees = whatever eBay/the platform took out — final value fee, ad fee, and any shipping cost that came out of your pocket. Just enter the total difference between what it sold for and what actually landed in your account; net proceeds calculate automatically.</p>
       <form id="form-sale" class="form-grid">
-        <select name="cardId" required></select>
+        <select name="cardId" id="sale-card-select" required></select>
         <select name="platform"><option>eBay</option><option>COMC</option><option>Whatnot</option><option>Facebook</option><option>Other</option></select>
         <input type="number" step="0.01" name="salePrice" placeholder="Sold for ($)" required />
         <input type="number" step="0.01" name="fees" placeholder="Fees / total taken out ($)" required />
         <input type="date" name="saleDate" required />
         <input type="text" name="buyer" placeholder="Buyer (optional)" />
         <input type="text" name="orderId" placeholder="Order ID (optional)" />
+        <div id="quick-add-card" class="quick-add hidden">
+          <input type="text" id="new-card-player" placeholder="New card name" />
+          <input type="text" id="new-card-sport" placeholder="Sport (optional)" />
+          <input type="number" step="0.01" id="new-card-cost" placeholder="What you paid (optional, defaults to $0)" />
+        </div>
         <button type="submit" class="btn-primary">Record sale</button>
       </form>
     </div>

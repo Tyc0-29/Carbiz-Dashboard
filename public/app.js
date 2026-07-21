@@ -132,19 +132,55 @@ function populateCardDropdowns() {
     ? listableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('')
     : `<option value="">No in-hand cards available to list</option>`;
 
-  // Sale dropdown: any card not already sold (in_hand or listed)
+  // Sale dropdown: any card not already sold (in_hand or listed), plus a quick-add option
   const sellableCards = cardsCache.filter(c => c.status !== 'sold');
   const saleSelect = $('select[name="cardId"]', $('#form-sale'));
-  saleSelect.innerHTML = sellableCards.length
-    ? sellableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('')
-    : `<option value="">No available cards to sell</option>`;
+  const sellableOptions = sellableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
+  saleSelect.innerHTML = `<option value="__new__">+ New card (not in inventory yet)</option>` + sellableOptions;
+  toggleQuickAdd();
 }
+
+function toggleQuickAdd() {
+  const select = $('#sale-card-select');
+  const quickAdd = $('#quick-add-card');
+  if (select.value === '__new__') {
+    quickAdd.classList.remove('hidden');
+  } else {
+    quickAdd.classList.add('hidden');
+  }
+}
+
+$('#sale-card-select').addEventListener('change', toggleQuickAdd);
+
+// ---------- Already-owned checkbox ----------
+const alreadyOwnedCheckbox = $('#already-owned');
+const cardCostInput = $('#card-cost');
+alreadyOwnedCheckbox.addEventListener('change', () => {
+  if (alreadyOwnedCheckbox.checked) {
+    cardCostInput.value = 0;
+    cardCostInput.disabled = true;
+    cardCostInput.required = false;
+  } else {
+    cardCostInput.disabled = false;
+    cardCostInput.required = true;
+    cardCostInput.value = '';
+  }
+});
 
 $('#form-card').addEventListener('submit', async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  await api('/api/cards', { method: 'POST', body: JSON.stringify(Object.fromEntries(fd)) });
+  const body = Object.fromEntries(fd);
+  if (alreadyOwnedCheckbox.checked) {
+    body.cost = 0;
+    body.needsCostReview = true;
+    if (!body.source) body.source = 'Already owned';
+  }
+  await api('/api/cards', { method: 'POST', body: JSON.stringify(body) });
   e.target.reset();
+  alreadyOwnedCheckbox.checked = false;
+  cardCostInput.disabled = false;
+  cardCostInput.required = true;
   loadCards();
 });
 
@@ -208,8 +244,32 @@ async function loadSales() {
 $('#form-sale').addEventListener('submit', async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  await api('/api/sales', { method: 'POST', body: JSON.stringify(Object.fromEntries(fd)) });
+  const body = Object.fromEntries(fd);
+
+  if (body.cardId === '__new__') {
+    const player = $('#new-card-player').value.trim();
+    if (!player) {
+      alert('Enter a name for the new card before recording the sale.');
+      return;
+    }
+    const costVal = $('#new-card-cost').value;
+    const newCard = await api('/api/cards', {
+      method: 'POST',
+      body: JSON.stringify({
+        player,
+        sport: $('#new-card-sport').value.trim(),
+        purchaseDate: body.saleDate,
+        cost: costVal || 0,
+        source: 'Added at time of sale',
+        needsCostReview: !costVal
+      })
+    });
+    body.cardId = newCard.id;
+  }
+
+  await api('/api/sales', { method: 'POST', body: JSON.stringify(body) });
   e.target.reset();
+  $('#quick-add-card').classList.add('hidden');
   loadCards();
   loadSales();
 });

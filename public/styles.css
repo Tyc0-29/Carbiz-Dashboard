@@ -211,6 +211,33 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   margin: -6px 0 16px;
   line-height: 1.5;
 }
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 14px;
+  cursor: pointer;
+}
+.checkbox-label input { width: 16px; height: 16px; accent-color: var(--red); cursor: pointer; }
+.quick-add {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 12px;
+  background: var(--red-wash);
+  border: 1px dashed var(--red);
+  border-radius: 6px;
+}
+.quick-add input {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 10px 12px;
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+}
 
 /* ---------- Tables ---------- */
 .kv-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 13px; }
@@ -346,6 +373,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   .scoreboard { grid-template-columns: repeat(2, 1fr); }
   .grid-2 { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
+  .quick-add { grid-template-columns: 1fr; }
 
   /* prevent iOS Safari from auto-zooming when tapping form fields */
   .form-grid input, .form-grid select, #import-mode { font-size: 16px; }
