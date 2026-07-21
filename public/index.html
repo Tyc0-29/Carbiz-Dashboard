@@ -119,13 +119,12 @@
   <section class="view" id="view-sales">
     <div class="panel">
       <h3>Record a sale</h3>
+      <p class="hint">Fees = whatever eBay/the platform took out — final value fee, ad fee, and any shipping cost that came out of your pocket. Just enter the total difference between what it sold for and what actually landed in your account; net proceeds calculate automatically.</p>
       <form id="form-sale" class="form-grid">
         <select name="cardId" required></select>
         <select name="platform"><option>eBay</option><option>COMC</option><option>Whatnot</option><option>Facebook</option><option>Other</option></select>
-        <input type="number" step="0.01" name="salePrice" placeholder="Sale price ($)" required />
-        <input type="number" step="0.01" name="shippingCharged" placeholder="Shipping charged to buyer ($)" />
-        <input type="number" step="0.01" name="fees" placeholder="Platform fees ($)" />
-        <input type="number" step="0.01" name="shippingPaid" placeholder="Shipping you paid ($)" />
+        <input type="number" step="0.01" name="salePrice" placeholder="Sold for ($)" required />
+        <input type="number" step="0.01" name="fees" placeholder="Fees / total taken out ($)" required />
         <input type="date" name="saleDate" required />
         <input type="text" name="buyer" placeholder="Buyer (optional)" />
         <input type="text" name="orderId" placeholder="Order ID (optional)" />

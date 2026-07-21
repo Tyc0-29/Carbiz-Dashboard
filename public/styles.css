@@ -346,4 +346,39 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   .scoreboard { grid-template-columns: repeat(2, 1fr); }
   .grid-2 { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
+
+  /* prevent iOS Safari from auto-zooming when tapping form fields */
+  .form-grid input, .form-grid select, #import-mode { font-size: 16px; }
+
+  /* stack tables into cards instead of horizontal-scroll on small screens */
+  .data-table thead, .data-table tr:first-child { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tr {
+    margin-bottom: 12px;
+    border: 1px solid var(--paper-line);
+    border-radius: 6px;
+    padding: 6px 4px;
+    background: var(--white);
+  }
+  .data-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 10px;
+    border-bottom: 1px solid var(--paper-line);
+    text-align: right;
+  }
+  .data-table td:last-child { border-bottom: none; }
+  .data-table td::before {
+    content: attr(data-label);
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-dim);
+    text-align: left;
+  }
+  .data-table td[data-label=""]::before { content: none; }
 }

@@ -99,13 +99,13 @@ async function loadCards() {
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Status</th><th>Source</th><th></th></tr>
     ${cardsCache.map(c => `
       <tr class="row-edge ${c.status}">
-        <td>${c.player}${c.needsCostReview ? ' ⚠' : ''}</td>
-        <td>${c.sport || '—'}</td>
-        <td>${c.purchaseDate}</td>
-        <td>${fmt$(c.cost)}</td>
-        <td><span class="status-chip ${c.status}">${c.status.replace('_',' ')}</span></td>
-        <td>${c.source || '—'}</td>
-        <td><button class="link-btn" data-del-card="${c.id}">Delete</button></td>
+        <td data-label="Card">${c.player}${c.needsCostReview ? ' ⚠' : ''}</td>
+        <td data-label="Sport">${c.sport || '—'}</td>
+        <td data-label="Purchased">${c.purchaseDate}</td>
+        <td data-label="Cost">${fmt$(c.cost)}</td>
+        <td data-label="Status"><span class="status-chip ${c.status}">${c.status.replace('_',' ')}</span></td>
+        <td data-label="Source">${c.source || '—'}</td>
+        <td data-label=""><button class="link-btn" data-del-card="${c.id}">Delete</button></td>
       </tr>
     `).join('')}
   `;
@@ -116,10 +116,28 @@ async function loadCards() {
     loadCards();
   }));
 
-  // populate card selects on listings/sales forms
-  const options = cardsCache.map(c => `<option value="${c.id}">${c.player} (${c.status})</option>`).join('');
-  $('select[name="cardId"]', $('#form-listing')).innerHTML = options;
-  $('select[name="cardId"]', $('#form-sale')).innerHTML = options;
+  populateCardDropdowns();
+}
+
+function cardLabel(c) {
+  const date = c.purchaseDate || '';
+  return `${c.player} — ${fmt$(c.cost)}${date ? ' — ' + date : ''}`;
+}
+
+function populateCardDropdowns() {
+  // Listing dropdown: only cards not already listed or sold
+  const listableCards = cardsCache.filter(c => c.status === 'in_hand');
+  const listingSelect = $('select[name="cardId"]', $('#form-listing'));
+  listingSelect.innerHTML = listableCards.length
+    ? listableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('')
+    : `<option value="">No in-hand cards available to list</option>`;
+
+  // Sale dropdown: any card not already sold (in_hand or listed)
+  const sellableCards = cardsCache.filter(c => c.status !== 'sold');
+  const saleSelect = $('select[name="cardId"]', $('#form-sale'));
+  saleSelect.innerHTML = sellableCards.length
+    ? sellableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('')
+    : `<option value="">No available cards to sell</option>`;
 }
 
 $('#form-card').addEventListener('submit', async (e) => {
@@ -138,12 +156,12 @@ async function loadListings() {
     ${listings.map(l => {
       const c = cardsCache.find(c => c.id === l.cardId);
       return `<tr>
-        <td>${c ? c.player : l.cardId}</td>
-        <td>${l.platform}</td>
-        <td>${fmt$(l.listPrice)}</td>
-        <td>${l.listDate}</td>
-        <td><span class="status-chip listed">${l.status}</span></td>
-        <td><button class="link-btn" data-del-listing="${l.id}">Delete</button></td>
+        <td data-label="Card">${c ? c.player : l.cardId}</td>
+        <td data-label="Platform">${l.platform}</td>
+        <td data-label="List price">${fmt$(l.listPrice)}</td>
+        <td data-label="Date">${l.listDate}</td>
+        <td data-label="Status"><span class="status-chip listed">${l.status}</span></td>
+        <td data-label=""><button class="link-btn" data-del-listing="${l.id}">Delete</button></td>
       </tr>`;
     }).join('')}
   `;
@@ -166,18 +184,17 @@ $('#form-listing').addEventListener('submit', async (e) => {
 async function loadSales() {
   const sales = await api('/api/sales');
   $('#sales-table').innerHTML = `
-    <tr><th>Card</th><th>Platform</th><th>Sale price</th><th>Fees</th><th>Ship paid</th><th>Net</th><th>Date</th><th></th></tr>
+    <tr><th>Card</th><th>Platform</th><th>Sale price</th><th>Fees</th><th>Net</th><th>Date</th><th></th></tr>
     ${sales.map(s => {
       const c = cardsCache.find(c => c.id === s.cardId);
       return `<tr>
-        <td>${c ? c.player : s.cardId}</td>
-        <td>${s.platform}</td>
-        <td>${fmt$(s.salePrice)}</td>
-        <td>${fmt$(s.fees)}</td>
-        <td>${fmt$(s.shippingPaid)}</td>
-        <td><strong>${fmt$(s.netProceeds)}</strong></td>
-        <td>${s.saleDate}</td>
-        <td><button class="link-btn" data-del-sale="${s.id}">Delete</button></td>
+        <td data-label="Card">${c ? c.player : s.cardId}</td>
+        <td data-label="Platform">${s.platform}</td>
+        <td data-label="Sale price">${fmt$(s.salePrice)}</td>
+        <td data-label="Fees">${fmt$(s.fees)}</td>
+        <td data-label="Net"><strong>${fmt$(s.netProceeds)}</strong></td>
+        <td data-label="Date">${s.saleDate}</td>
+        <td data-label=""><button class="link-btn" data-del-sale="${s.id}">Delete</button></td>
       </tr>`;
     }).join('')}
   `;
@@ -203,10 +220,10 @@ async function loadCash() {
   $('#cash-table').innerHTML = `
     <tr><th>Date</th><th>Amount</th><th>Note</th><th></th></tr>
     ${rows.map(r => `<tr>
-      <td>${r.date}</td>
-      <td>${fmt$(r.amount)}</td>
-      <td>${r.note || '—'}</td>
-      <td><button class="link-btn" data-del-cash="${r.id}">Delete</button></td>
+      <td data-label="Date">${r.date}</td>
+      <td data-label="Amount">${fmt$(r.amount)}</td>
+      <td data-label="Note">${r.note || '—'}</td>
+      <td data-label=""><button class="link-btn" data-del-cash="${r.id}">Delete</button></td>
     </tr>`).join('')}
   `;
   $$('[data-del-cash]').forEach(btn => btn.addEventListener('click', async () => {
