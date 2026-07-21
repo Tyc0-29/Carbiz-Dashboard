@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Slab & Ledger — Card Business Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">◈</span>
+    <span class="brand-name">Slab &amp; Ledger</span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="inventory">Inventory</button>
+    <button class="tab" data-tab="listings">Listings</button>
+    <button class="tab" data-tab="sales">Sales</button>
+    <button class="tab" data-tab="import">Import eBay CSV</button>
+    <button class="tab" data-tab="cash">Cash</button>
+  </nav>
+</header>
+
+<main id="app">
+
+  <!-- DASHBOARD -->
+  <section class="view active" id="view-dashboard">
+    <div class="scoreboard" id="scoreboard">
+      <div class="score-cell">
+        <div class="score-label">Realized P&amp;L</div>
+        <div class="score-value" id="sb-pnl">$0</div>
+        <div class="score-sub" id="sb-pnl-sub">on 0 sales</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Cash in hand</div>
+        <div class="score-value" id="sb-cash">$0</div>
+        <div class="score-sub">deposits − spend + proceeds</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">On-hand inventory</div>
+        <div class="score-value" id="sb-inv">$0</div>
+        <div class="score-sub" id="sb-inv-sub">0 cards, at cost</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Total invested</div>
+        <div class="score-value" id="sb-invested">$0</div>
+        <div class="score-sub">purchases + grading</div>
+      </div>
+    </div>
+
+    <div id="flag-banner" class="flag-banner hidden"></div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h3>Revenue breakdown</h3>
+        <table class="kv-table" id="revenue-breakdown"></table>
+      </div>
+      <div class="panel">
+        <h3>Snapshot</h3>
+        <table class="kv-table" id="snapshot-table"></table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Recent activity</h3>
+      <div id="activity-feed" class="activity-feed"></div>
+    </div>
+  </section>
+
+  <!-- INVENTORY -->
+  <section class="view" id="view-inventory">
+    <div class="panel">
+      <h3>Add a purchase</h3>
+      <form id="form-card" class="form-grid">
+        <input type="text" name="player" placeholder="Player / card name" required />
+        <input type="text" name="sport" placeholder="Sport (MLB, NFL, WNBA...)" />
+        <input type="date" name="purchaseDate" required />
+        <input type="number" step="0.01" name="cost" placeholder="Cost ($)" required />
+        <input type="text" name="source" placeholder="Source (eBay, show, trade...)" />
+        <input type="text" name="notes" placeholder="Notes" />
+        <button type="submit" class="btn-primary">Add card</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Inventory</h3>
+      <div class="table-wrap"><table class="data-table" id="cards-table"></table></div>
+    </div>
+  </section>
+
+  <!-- LISTINGS -->
+  <section class="view" id="view-listings">
+    <div class="panel">
+      <h3>Add a listing</h3>
+      <form id="form-listing" class="form-grid">
+        <select name="cardId" required></select>
+        <select name="platform"><option>eBay</option><option>COMC</option><option>Whatnot</option><option>Facebook</option><option>Other</option></select>
+        <input type="number" step="0.01" name="listPrice" placeholder="List price ($)" required />
+        <input type="date" name="listDate" required />
+        <input type="text" name="ebayListingId" placeholder="eBay listing ID (optional)" />
+        <button type="submit" class="btn-primary">Add listing</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Listings</h3>
+      <div class="table-wrap"><table class="data-table" id="listings-table"></table></div>
+    </div>
+  </section>
+
+  <!-- SALES -->
+  <section class="view" id="view-sales">
+    <div class="panel">
+      <h3>Record a sale</h3>
+      <form id="form-sale" class="form-grid">
+        <select name="cardId" required></select>
+        <select name="platform"><option>eBay</option><option>COMC</option><option>Whatnot</option><option>Facebook</option><option>Other</option></select>
+        <input type="number" step="0.01" name="salePrice" placeholder="Sale price ($)" required />
+        <input type="number" step="0.01" name="shippingCharged" placeholder="Shipping charged to buyer ($)" />
+        <input type="number" step="0.01" name="fees" placeholder="Platform fees ($)" />
+        <input type="number" step="0.01" name="shippingPaid" placeholder="Shipping you paid ($)" />
+        <input type="date" name="saleDate" required />
+        <input type="text" name="buyer" placeholder="Buyer (optional)" />
+        <input type="text" name="orderId" placeholder="Order ID (optional)" />
+        <button type="submit" class="btn-primary">Record sale</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Sales</h3>
+      <div class="table-wrap"><table class="data-table" id="sales-table"></table></div>
+    </div>
+  </section>
+
+  <!-- IMPORT -->
+  <section class="view" id="view-import">
+    <div class="panel">
+      <h3>Import eBay CSV</h3>
+      <p class="hint">From eBay: Seller Hub → Orders (or Payments → Reports) → Export. Upload the CSV, map the columns, and review before importing. Sales imported this way create a placeholder card entry with $0 cost — flagged for you to fill in the real cost basis.</p>
+      <div class="import-controls">
+        <label class="file-btn">
+          Choose CSV
+          <input type="file" id="csv-file" accept=".csv" />
+        </label>
+        <select id="import-mode">
+          <option value="sales">This file is: eBay sales / orders</option>
+          <option value="purchases">This file is: eBay purchases</option>
+        </select>
+      </div>
+      <div id="mapping-area"></div>
+    </div>
+  </section>
+
+  <!-- CASH -->
+  <section class="view" id="view-cash">
+    <div class="panel">
+      <h3>Cash adjustment</h3>
+      <p class="hint">Log starting capital, additional deposits, or withdrawals from the business. Purchases, grading, and sale proceeds are already accounted for automatically.</p>
+      <form id="form-cash" class="form-grid">
+        <input type="date" name="date" required />
+        <input type="number" step="0.01" name="amount" placeholder="Amount ($, negative for withdrawal)" required />
+        <input type="text" name="note" placeholder="Note (e.g. starting capital)" />
+        <button type="submit" class="btn-primary">Add adjustment</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Adjustments</h3>
+      <div class="table-wrap"><table class="data-table" id="cash-table"></table></div>
+    </div>
+  </section>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
