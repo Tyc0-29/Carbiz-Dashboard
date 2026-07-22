@@ -4,11 +4,12 @@ const path = require('path');
 const DB_PATH = path.join(__dirname, 'data', 'db.json');
 
 const EMPTY_DB = {
-  cards: [],       // { id, player, sport, purchaseDate, cost, source, status, notes, createdAt }
+  cards: [],       // { id, player, sport, purchaseDate, cost, source, status, notes, createdAt, displayCase, photoUrl }
   listings: [],     // { id, cardId, platform, listPrice, listDate, ebayListingId, status, notes }
   sales: [],         // { id, cardId, platform, salePrice, shippingCharged, fees, shippingPaid, netProceeds, saleDate, buyer, orderId, notes }
   gradingCosts: [],  // { id, cardId, company, grade, cost, date }
-  cashAdjustments: [] // { id, date, amount, note }  amount positive=deposit, negative=withdrawal
+  cashAdjustments: [], // legacy — no longer used by the UI, kept only so old data isn't deleted
+  manualCashOnHand: 0  // user-entered figure, not formula-derived
 };
 
 function ensureDb() {
@@ -26,8 +27,9 @@ function readDb() {
     const parsed = JSON.parse(raw);
     // backfill any missing collections for forward-compat
     for (const key of Object.keys(EMPTY_DB)) {
-      if (!Array.isArray(parsed[key])) parsed[key] = [];
+      if (Array.isArray(EMPTY_DB[key]) && !Array.isArray(parsed[key])) parsed[key] = [];
     }
+    if (typeof parsed.manualCashOnHand !== 'number') parsed.manualCashOnHand = 0;
     return parsed;
   } catch (e) {
     return JSON.parse(JSON.stringify(EMPTY_DB));

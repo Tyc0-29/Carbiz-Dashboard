@@ -30,10 +30,10 @@
     <button class="tab active" data-tab="dashboard">Dashboard</button>
     <button class="tab" data-tab="performance">Performance</button>
     <button class="tab" data-tab="inventory">Inventory</button>
+    <button class="tab" data-tab="display-case">Display Case</button>
     <button class="tab" data-tab="listings">Listings</button>
     <button class="tab" data-tab="sales">Sales</button>
     <button class="tab" data-tab="import">Bulk Import</button>
-    <button class="tab" data-tab="cash">Cash</button>
   </nav>
   <a href="/api/export" download class="export-link">Export data ⬇</a>
 </header>
@@ -48,30 +48,25 @@
         <div class="score-value" id="sb-pnl">$0</div>
         <div class="score-sub" id="sb-pnl-sub">on 0 sales</div>
       </div>
-      <div class="score-cell">
-        <div class="score-label">Cash in hand</div>
-        <div class="score-value" id="sb-cash">$0</div>
-        <div class="score-sub">deposits − spend + proceeds</div>
+      <div class="score-cell score-cell-editable">
+        <div class="score-label">Cash on hand</div>
+        <input type="number" step="0.01" class="score-value-input" id="sb-cash-input" placeholder="0" />
+        <div class="score-sub">tap to edit — not calculated</div>
       </div>
       <div class="score-cell">
-        <div class="score-label">On-hand inventory</div>
-        <div class="score-value" id="sb-inv">$0</div>
-        <div class="score-sub" id="sb-inv-sub">0 cards, at cost</div>
+        <div class="score-label">Current inventory available: Cost</div>
+        <div class="score-value" id="sb-avail-cost">$0</div>
+        <div class="score-sub" id="sb-avail-cost-sub">0 cards</div>
       </div>
       <div class="score-cell">
-        <div class="score-label">Est. on-hand market value</div>
-        <div class="score-value" id="sb-est">$0</div>
-        <div class="score-sub" id="sb-est-sub">0 of 0 priced</div>
-      </div>
-      <div class="score-cell">
-        <div class="score-label">Listed total ($ asking)</div>
-        <div class="score-value" id="sb-listed">$0</div>
-        <div class="score-sub" id="sb-listed-sub">0 cards listed</div>
+        <div class="score-label">Current inventory available: Est. Market Value</div>
+        <div class="score-value" id="sb-avail-est">$0</div>
+        <div class="score-sub" id="sb-avail-est-sub">0 of 0 priced</div>
       </div>
       <div class="score-cell">
         <div class="score-label">Total invested</div>
         <div class="score-value" id="sb-invested">$0</div>
-        <div class="score-sub">purchases + grading</div>
+        <div class="score-sub">purchases + grading, lifetime</div>
       </div>
     </div>
 
@@ -192,6 +187,11 @@
     <div class="panel">
       <h3>Inventory</h3>
       <input type="text" id="filter-cards" class="filter-input" placeholder="Filter by player or sport..." />
+      <div class="status-filter-group">
+        <label><input type="checkbox" class="status-filter" value="in_hand" checked /> In Hand</label>
+        <label><input type="checkbox" class="status-filter" value="listed" checked /> Listed</label>
+        <label><input type="checkbox" class="status-filter" value="sold" checked /> Sold</label>
+      </div>
       <div class="table-wrap"><table class="data-table" id="cards-table"></table></div>
     </div>
   </section>
@@ -288,24 +288,7 @@
       </div>
       <div id="mapping-area"></div>
     </div>
-  </section>
 
-  <!-- CASH -->
-  <section class="view" id="view-cash">
-    <div class="panel">
-      <h3>Cash adjustment</h3>
-      <p class="hint">Log starting capital, additional deposits, or withdrawals from the business. Purchases, grading, and sale proceeds are already accounted for automatically.</p>
-      <form id="form-cash" class="form-grid">
-        <input type="date" name="date" required />
-        <input type="number" step="0.01" name="amount" placeholder="Amount ($, negative for withdrawal)" required />
-        <input type="text" name="note" placeholder="Note (e.g. starting capital)" />
-        <button type="submit" class="btn-primary">Add adjustment</button>
-      </form>
-    </div>
-    <div class="panel">
-      <h3>Adjustments</h3>
-      <div class="table-wrap"><table class="data-table" id="cash-table"></table></div>
-    </div>
     <div class="panel">
       <h3>Automatic backups</h3>
       <p class="hint">The site snapshots your data once a day automatically, kept for 30 days — this is a safety net for in-app mistakes, not a replacement for occasionally clicking Export data and saving that file somewhere off the site.</p>
@@ -322,6 +305,20 @@
       </div>
       <div id="restore-status" class="hint"></div>
     </div>
+  </section>
+
+  <!-- DISPLAY CASE -->
+  <section class="view" id="view-display-case">
+    <details class="panel">
+      <summary>Add to Display Case</summary>
+      <p class="hint">Pick a card you're holding long-term, add a photo, and it'll show up below styled like it's on display.</p>
+      <form id="form-display" class="form-grid">
+        <select name="cardId" id="display-card-select" required></select>
+        <input type="file" id="display-photo-input" accept="image/*" class="file-input-plain" />
+        <button type="submit" class="btn-primary">Add to case</button>
+      </form>
+    </details>
+    <div id="display-case-gallery" class="display-case-gallery"></div>
   </section>
 
 </main>

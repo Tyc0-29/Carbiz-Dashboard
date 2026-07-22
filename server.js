@@ -4,17 +4,23 @@ const fs = require('fs');
 const { readDb, writeDb, genId, DB_PATH } = require('./store');
 
 const app = express();
-app.use(express.json({ limit: '5mb' }));
+app.use(express.json({ limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 const BACKUP_DIR = path.join(__dirname, 'data', 'backups');
 const BACKUP_RETENTION_DAYS = 30;
+// photos live on the persistent disk (data/), NOT in public/ — public/ is source code
+// and gets fully replaced on every deploy, which would silently delete photos
+const UPLOADS_DIR = path.join(__dirname, 'data', 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 console.log('='.repeat(60));
 console.log('DATA PATH DIAGNOSTIC — verify this matches your Render disk mount path');
 console.log('DB_PATH:', DB_PATH);
 console.log('BACKUP_DIR:', BACKUP_DIR);
+console.log('UPLOADS_DIR:', UPLOADS_DIR);
 console.log('Existing card count at boot:', (() => {
   try { return readDb().cards.length; } catch { return 'unreadable'; }
 })());
@@ -91,6 +97,8 @@ app.post('/api/cards', async (req, res) => {
     needsCostReview: !!req.body.needsCostReview,
     alreadyOwned: !!req.body.alreadyOwned,
     estimatedValue: (req.body.estimatedValue !== undefined && req.body.estimatedValue !== '') ? num(req.body.estimatedValue) : null,
+    displayCase: !!req.body.displayCase,
+    photoUrl: req.body.photoUrl || null,
     createdAt: new Date().toISOString()
   };
   db.cards.push(card);
@@ -311,6 +319,43 @@ app.delete('/api/cash-adjustments/:id', async (req, res) => {
   db.cashAdjustments = db.cashAdjustments.filter(c => c.id !== req.params.id);
   await writeDb(db);
   res.json({ ok: true });
+});
+
+// ---------- DISPLAY CASE PHOTOS ----------
+// Accepts a base64 data URI, writes the image to the persistent disk, and
+// stores just the URL path on the card record.
+app.post('/api/cards/:id/photo', async (req, res) => {
+  const db = readDb();
+  const card = db.cards.find(c => c.id === req.params.id);
+  if (!card) return res.status(404).json({ error: 'Card not found' });
+
+  const dataUri = req.body.imageBase64;
+  const match = /^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/.exec(dataUri || '');
+  if (!match) return res.status(400).json({ error: 'Expected a base64 image data URI (png/jpeg/webp)' });
+
+  const ext = match[1] === 'jpg' ? 'jpeg' : match[1];
+  const buffer = Buffer.from(match[2], 'base64');
+  const filename = `${card.id}-${Date.now()}.${ext}`;
+
+  // remove any previous photo for this card so old files don't pile up
+  if (card.photoUrl) {
+    const oldPath = path.join(UPLOADS_DIR, path.basename(card.photoUrl));
+    if (fs.existsSync(oldPath)) { try { fs.unlinkSync(oldPath); } catch {} }
+  }
+
+  fs.writeFileSync(path.join(UPLOADS_DIR, filename), buffer);
+  card.photoUrl = `/uploads/${filename}`;
+  await writeDb(db);
+  res.json({ photoUrl: card.photoUrl });
+});
+
+// ---------- MANUAL CASH ON HAND ----------
+// Not formula-derived — the person types in the real number directly.
+app.put('/api/cash-on-hand', async (req, res) => {
+  const db = readDb();
+  db.manualCashOnHand = num(req.body.amount);
+  await writeDb(db);
+  res.json({ manualCashOnHand: db.manualCashOnHand });
 });
 
 // ---------- eBay CSV IMPORT ----------
@@ -535,6 +580,7 @@ app.get('/api/dashboard', (req, res) => {
 
   const inHandCards = db.cards.filter(c => c.status === 'in_hand');
   const listedCards = db.cards.filter(c => c.status === 'listed');
+  const availableCards = db.cards.filter(c => c.status !== 'sold'); // in_hand + listed combined
 
   const onHandCostValue = inHandCards.reduce((s, c) => s + costBasisForCard(db, c.id), 0);
   const onHandEstimatedValue = inHandCards.reduce((s, c) => {
@@ -547,6 +593,14 @@ app.get('/api/dashboard', (req, res) => {
     return s + (c.estimatedValue !== null && c.estimatedValue !== undefined ? num(c.estimatedValue) : costBasisForCard(db, c.id));
   }, 0);
   const listedWithEstimate = listedCards.filter(c => c.estimatedValue !== null && c.estimatedValue !== undefined).length;
+
+  // combined "available" figures — this is what shows on the main dashboard now
+  const availableCostValue = availableCards.reduce((s, c) => s + costBasisForCard(db, c.id), 0);
+  const availableEstimatedValue = availableCards.reduce((s, c) => {
+    return s + (c.estimatedValue !== null && c.estimatedValue !== undefined ? num(c.estimatedValue) : costBasisForCard(db, c.id));
+  }, 0);
+  const availableWithEstimate = availableCards.filter(c => c.estimatedValue !== null && c.estimatedValue !== undefined).length;
+
   // most recent listing per listed card, to avoid double-counting relisted cards
   const latestListingByCard = {};
   db.listings.forEach(l => {
@@ -563,9 +617,6 @@ app.get('/api/dashboard', (req, res) => {
   const realizedCostBasis = db.sales.reduce((s, s2) => s + costBasisForCard(db, s2.cardId), 0);
   const realizedPnL = +(totalNetProceeds - realizedCostBasis).toFixed(2);
 
-  const cashDeposits = db.cashAdjustments.reduce((s, c) => s + num(c.amount), 0);
-  const cashInHand = +(cashDeposits - totalPurchaseCost - totalGradingCost + totalNetProceeds).toFixed(2);
-
   const needsCostReview = db.cards.filter(c => c.needsCostReview).length;
 
   const activeListings = db.listings.filter(l => l.status === 'active').length;
@@ -580,6 +631,10 @@ app.get('/api/dashboard', (req, res) => {
       totalNetProceeds: +totalNetProceeds.toFixed(2)
     },
     inventory: {
+      availableCount: availableCards.length,
+      availableCostValue: +availableCostValue.toFixed(2),
+      availableEstimatedValue: +availableEstimatedValue.toFixed(2),
+      availableWithEstimate,
       onHandCount: inHandCards.length,
       onHandCostValue: +onHandCostValue.toFixed(2),
       onHandEstimatedValue: +onHandEstimatedValue.toFixed(2),
@@ -595,8 +650,7 @@ app.get('/api/dashboard', (req, res) => {
       realizedPnL
     },
     cash: {
-      cashDeposits: +cashDeposits.toFixed(2),
-      cashInHand
+      cashOnHand: +num(db.manualCashOnHand).toFixed(2)
     },
     flags: {
       needsCostReview,

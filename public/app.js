@@ -53,13 +53,13 @@ async function loadDashboard() {
   pnlEl.className = 'score-value ' + (d.pnl.realizedPnL >= 0 ? 'positive' : 'negative');
   $('#sb-pnl-sub').textContent = `on ${d.counts.sales} sale${d.counts.sales === 1 ? '' : 's'}`;
 
-  $('#sb-cash').textContent = fmt$(d.cash.cashInHand);
-  $('#sb-inv').textContent = fmt$(d.inventory.onHandCostValue);
-  $('#sb-inv-sub').textContent = `${d.inventory.onHandCount} cards, at cost`;
-  $('#sb-est').textContent = fmt$(d.inventory.onHandEstimatedValue);
-  $('#sb-est-sub').textContent = `${d.inventory.onHandWithEstimate} of ${d.inventory.onHandCount} priced`;
-  $('#sb-listed').textContent = fmt$(d.inventory.listedAskingTotal);
-  $('#sb-listed-sub').textContent = `${d.inventory.listedCount} card${d.inventory.listedCount === 1 ? '' : 's'} listed`;
+  const cashInput = $('#sb-cash-input');
+  if (document.activeElement !== cashInput) cashInput.value = d.cash.cashOnHand || '';
+
+  $('#sb-avail-cost').textContent = fmt$(d.inventory.availableCostValue);
+  $('#sb-avail-cost-sub').textContent = `${d.inventory.availableCount} card${d.inventory.availableCount === 1 ? '' : 's'}`;
+  $('#sb-avail-est').textContent = fmt$(d.inventory.availableEstimatedValue);
+  $('#sb-avail-est-sub').textContent = `${d.inventory.availableWithEstimate} of ${d.inventory.availableCount} priced`;
   $('#sb-invested').textContent = fmt$(d.totals.totalPurchaseCost + d.totals.totalGradingCost);
 
   const flagBanner = $('#flag-banner');
@@ -84,7 +84,6 @@ async function loadDashboard() {
     <tr><td>Listed inventory (at cost)</td><td>${fmt$(d.inventory.listedCostValue)}</td></tr>
     <tr><td>Listed inventory (est. value)</td><td>${fmt$(d.inventory.listedEstimatedValue)} <span style="color:var(--text-dim);font-weight:400;">(${d.inventory.listedWithEstimate} of ${d.inventory.listedCount} priced)</span></td></tr>
     <tr><td>Active listings</td><td>${d.flags.activeListings}</td></tr>
-    <tr><td>Cash deposits logged</td><td>${fmt$(d.cash.cashDeposits)}</td></tr>
   `;
 
   const events = [];
@@ -102,18 +101,24 @@ async function loadDashboard() {
   `).join('') || '<div class="activity-row"><span>No activity yet — add a purchase to get started.</span></div>';
 }
 
+$('#sb-cash-input').addEventListener('change', async (e) => {
+  await api('/api/cash-on-hand', { method: 'PUT', body: JSON.stringify({ amount: e.target.value }) });
+});
+
 // ---------- Inventory ----------
 async function loadCards() {
   cardsCache = await api('/api/cards');
   renderCardsTable();
   populateCardDropdowns();
+  if (typeof loadDisplayCase === 'function') loadDisplayCase();
 }
 
 let editingCardId = null;
 
 function renderCardsTable() {
   const query = $('#filter-cards')?.value || '';
-  const rows = cardsCache.filter(c => matchesFilter(c, query));
+  const checkedStatuses = $$('.status-filter').filter(cb => cb.checked).map(cb => cb.value);
+  const rows = cardsCache.filter(c => matchesFilter(c, query) && checkedStatuses.includes(c.status));
 
   $('#cards-table').innerHTML = `
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Est. Value</th><th>Status</th><th>Source</th><th></th></tr>
@@ -209,6 +214,7 @@ function renderCardsTable() {
 }
 
 $('#filter-cards').addEventListener('input', renderCardsTable);
+$$('.status-filter').forEach(cb => cb.addEventListener('change', renderCardsTable));
 
 function cardLabel(c) {
   const date = c.purchaseDate || '';
@@ -535,26 +541,7 @@ $('#form-sale').addEventListener('submit', async (e) => {
   loadSales();
 });
 
-// ---------- Cash ----------
-async function loadCash() {
-  const rows = await api('/api/cash-adjustments');
-  $('#cash-table').innerHTML = `
-    <tr><th>Date</th><th>Amount</th><th>Note</th><th></th></tr>
-    ${rows.map(r => `<tr>
-      <td data-label="Date">${r.date}</td>
-      <td data-label="Amount">${fmt$(r.amount)}</td>
-      <td data-label="Note">${r.note || '—'}</td>
-      <td data-label=""><button class="link-btn" data-del-cash="${r.id}">Delete</button></td>
-    </tr>`).join('')}
-  `;
-  $$('[data-del-cash]').forEach(btn => btn.addEventListener('click', async () => {
-    if (!confirm('Delete this cash adjustment?')) return;
-    await api(`/api/cash-adjustments/${btn.dataset.delCash}`, { method: 'DELETE' });
-    loadCash();
-    loadDashboard();
-  }));
-}
-
+// ---------- Backups & Restore ----------
 async function loadBackups() {
   const files = await api('/api/backups');
   $('#backups-list').innerHTML = files.length
@@ -585,28 +572,19 @@ $('#restore-file').addEventListener('change', async (e) => {
     const text = await file.text();
     const data = JSON.parse(text);
     const res = await api('/api/restore', { method: 'POST', body: JSON.stringify(data) });
-    statusEl.textContent = `Restored: ${res.counts.cards} cards, ${res.counts.listings} listings, ${res.counts.sales} sales, ${res.counts.gradingCosts} grading entries, ${res.counts.cashAdjustments} cash adjustments.`;
+    statusEl.textContent = `Restored: ${res.counts.cards} cards, ${res.counts.listings} listings, ${res.counts.sales} sales, ${res.counts.gradingCosts} grading entries.`;
     e.target.value = '';
     loadCards();
     loadListings();
     loadSales();
-    loadCash();
     loadGrading();
     loadBackups();
     loadDashboard();
+    loadDisplayCase();
   } catch (err) {
     statusEl.textContent = `Restore failed: ${err.message}. Make sure this is a valid backup file (exported from this site).`;
     e.target.value = '';
   }
-});
-
-$('#form-cash').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const fd = new FormData(e.target);
-  await api('/api/cash-adjustments', { method: 'POST', body: JSON.stringify(Object.fromEntries(fd)) });
-  e.target.reset();
-  loadCash();
-  loadDashboard();
 });
 
 // ---------- CSV Import ----------
@@ -823,6 +801,106 @@ async function loadPerformance() {
   });
 }
 
+// ---------- Display Case ----------
+let displayCache = [];
+
+async function loadDisplayCase() {
+  displayCache = cardsCache.filter(c => c.displayCase);
+  renderDisplayCase();
+  populateDisplayDropdown();
+}
+
+function populateDisplayDropdown() {
+  const select = $('#display-card-select');
+  if (!select) return;
+  const eligible = cardsCache.filter(c => c.status !== 'sold' && !c.displayCase);
+  select.innerHTML = eligible.length
+    ? eligible.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('')
+    : `<option value="">No eligible cards (already in case, or all sold)</option>`;
+}
+
+function renderDisplayCase() {
+  const gallery = $('#display-case-gallery');
+  if (!gallery) return;
+  if (!displayCache.length) {
+    gallery.innerHTML = `<div class="panel"><p class="hint" style="margin:0;">Nothing on display yet — add a card above to start your case.</p></div>`;
+    return;
+  }
+  gallery.innerHTML = displayCache.map(c => {
+    const value = c.estimatedValue !== null && c.estimatedValue !== undefined ? c.estimatedValue : c.cost;
+    const gain = value - c.cost;
+    return `
+    <div class="display-card">
+      <div class="display-card-photo">
+        ${c.photoUrl ? `<img src="${c.photoUrl}" alt="${c.player}" />` : `<div class="display-card-noimg">No photo yet</div>`}
+      </div>
+      <div class="display-card-plaque">
+        <div class="display-card-name">${c.player}</div>
+        <div class="display-card-sport">${c.sport || ''}</div>
+        <div class="display-card-figures">
+          <div><span>Cost</span><strong>${fmt$(c.cost)}</strong></div>
+          <div><span>Est. Value</span><strong>${fmt$(value)}</strong></div>
+          <div><span>Unrealized</span><strong class="${gain >= 0 ? 'positive' : 'negative'}">${fmt$(gain)}</strong></div>
+        </div>
+        <div class="display-card-actions">
+          <label class="link-btn">Change photo<input type="file" accept="image/*" class="display-photo-swap" data-card-id="${c.id}" style="display:none;" /></label>
+          <button class="link-btn" data-remove-display="${c.id}">Remove from case</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  $$('.display-photo-swap').forEach(input => input.addEventListener('change', (e) => handlePhotoUpload(e, input.dataset.cardId)));
+  $$('[data-remove-display]').forEach(btn => btn.addEventListener('click', async () => {
+    await api(`/api/cards/${btn.dataset.removeDisplay}`, { method: 'PUT', body: JSON.stringify({ displayCase: false }) });
+    loadCards();
+  }));
+}
+
+// resize/compress client-side so we're not shipping huge phone photos to a JSON-file-backed server
+function resizeImageFile(file, maxDim = 1000, quality = 0.85) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = (e) => { img.src = e.target.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > height && width > maxDim) { height *= maxDim / width; width = maxDim; }
+      else if (height > maxDim) { width *= maxDim / height; height = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handlePhotoUpload(e, cardId) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const dataUri = await resizeImageFile(file);
+  await api(`/api/cards/${cardId}/photo`, { method: 'POST', body: JSON.stringify({ imageBase64: dataUri }) });
+  loadCards();
+}
+
+$('#form-display').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const cardId = $('#display-card-select').value;
+  if (!cardId) { alert('No eligible card selected.'); return; }
+  await api(`/api/cards/${cardId}`, { method: 'PUT', body: JSON.stringify({ displayCase: true }) });
+
+  const photoFile = $('#display-photo-input').files[0];
+  if (photoFile) {
+    const dataUri = await resizeImageFile(photoFile);
+    await api(`/api/cards/${cardId}/photo`, { method: 'POST', body: JSON.stringify({ imageBase64: dataUri }) });
+  }
+  e.target.reset();
+  loadCards();
+});
+
 // ---------- Init ----------
 (async function init() {
   const today = new Date().toISOString().slice(0, 10);
@@ -832,6 +910,6 @@ async function loadPerformance() {
   $('input[name="date"]').value = today;
 
   await loadCards();
-  await Promise.all([loadListings(), loadSales(), loadCash(), loadBackups(), loadGrading()]);
+  await Promise.all([loadListings(), loadSales(), loadBackups(), loadGrading(), loadDisplayCase()]);
   await loadDashboard();
 })();
