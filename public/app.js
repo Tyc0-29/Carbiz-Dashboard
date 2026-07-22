@@ -109,7 +109,7 @@ function renderCardsTable() {
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Status</th><th>Source</th><th></th></tr>
     ${rows.map(c => `
       <tr class="row-edge ${c.status}">
-        <td data-label="Card">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}</td>
+        <td data-label="Card" class="cell-title">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}</td>
         <td data-label="Sport">${c.sport || '—'}</td>
         <td data-label="Purchased">${c.purchaseDate}</td>
         <td data-label="Cost">${fmt$(c.cost)}</td>
@@ -135,17 +135,17 @@ function cardLabel(c) {
 }
 
 function populateCardDropdowns() {
-  // Listing dropdown: cards not already listed/sold, plus a quick-add option
+  // Listing dropdown: cards not already listed/sold, with quick-add as a fallback option at the end
   const listableCards = cardsCache.filter(c => c.status === 'in_hand');
   const listingSelect = $('#listing-card-select');
   const listableOptions = listableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
-  listingSelect.innerHTML = `<option value="__new__">+ New card (not in inventory yet)</option>` + listableOptions;
+  listingSelect.innerHTML = listableOptions + `<option value="__new__">+ New card (not in inventory yet)</option>`;
 
-  // Sale dropdown: any card not already sold, plus a quick-add option
+  // Sale dropdown: any card not already sold, with quick-add as a fallback option at the end
   const sellableCards = cardsCache.filter(c => c.status !== 'sold');
   const saleSelect = $('#sale-card-select');
   const sellableOptions = sellableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
-  saleSelect.innerHTML = `<option value="__new__">+ New card (not in inventory yet)</option>` + sellableOptions;
+  saleSelect.innerHTML = sellableOptions + `<option value="__new__">+ New card (not in inventory yet)</option>`;
 
   toggleQuickAdd(saleSelect, $('#quick-add-card'));
   toggleQuickAdd(listingSelect, $('#quick-add-listing-card'));
@@ -228,7 +228,7 @@ function renderListingsTable() {
     ${rows.map(l => {
       const c = cardsCache.find(c => c.id === l.cardId);
       return `<tr>
-        <td data-label="Card">${c ? c.player : l.cardId}</td>
+        <td data-label="Card" class="cell-title">${c ? c.player : l.cardId}</td>
         <td data-label="Platform">${l.platform}</td>
         <td data-label="List price">${fmt$(l.listPrice)}</td>
         <td data-label="Date">${l.listDate}</td>
@@ -294,7 +294,7 @@ function renderSalesTable() {
     ${rows.map(s => {
       const c = cardsCache.find(c => c.id === s.cardId);
       return `<tr>
-        <td data-label="Card">${c ? c.player : s.cardId}</td>
+        <td data-label="Card" class="cell-title">${c ? c.player : s.cardId}</td>
         <td data-label="Platform">${s.platform}</td>
         <td data-label="Sale price">${fmt$(s.salePrice)}</td>
         <td data-label="Fees">${fmt$(s.fees)}</td>
