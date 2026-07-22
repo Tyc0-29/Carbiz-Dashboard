@@ -38,6 +38,7 @@ $$('.tab').forEach(tab => {
 let cardsCache = [];
 let listingsCache = [];
 let salesCache = [];
+let gradingCache = [];
 
 // ---------- Dashboard ----------
 async function loadDashboard() {
@@ -115,7 +116,7 @@ function renderCardsTable() {
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Est. Value</th><th>Status</th><th>Source</th><th></th></tr>
     ${rows.map(c => `
       <tr class="row-edge ${c.status}">
-        <td data-label="Card" class="cell-title">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.alreadyOwned ? ' <span class="owned-tag">OWNED</span>' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}</td>
+        <td data-label="Card" class="cell-title">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.alreadyOwned ? ' <span class="owned-tag">OWNED</span>' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}${gradingTotalForCard(c.id) > 0 ? ` <span class="owned-tag" style="color:var(--navy);background:#DCE6F5;">GRADED +${fmt$(gradingTotalForCard(c.id))}</span>` : ''}</td>
         <td data-label="Sport">${c.sport || '—'}</td>
         <td data-label="Purchased">${c.purchaseDate}</td>
         <td data-label="Cost">${fmt$(c.cost)}</td>
@@ -163,6 +164,10 @@ function cardLabel(c) {
   return `${c.player} — ${fmt$(c.cost)}${date ? ' — ' + date : ''}`;
 }
 
+function gradingTotalForCard(cardId) {
+  return gradingCache.filter(g => g.cardId === cardId).reduce((s, g) => s + Number(g.cost || 0), 0);
+}
+
 function populateCardDropdowns() {
   // Listing dropdown: cards not already listed/sold, with quick-add as a fallback option at the end
   const listableCards = cardsCache.filter(c => c.status === 'in_hand');
@@ -178,6 +183,13 @@ function populateCardDropdowns() {
 
   toggleQuickAdd(saleSelect, $('#quick-add-card'));
   toggleQuickAdd(listingSelect, $('#quick-add-listing-card'));
+
+  // Grading dropdown: any non-sold card
+  const gradableCards = cardsCache.filter(c => c.status !== 'sold');
+  const gradingSelect = $('#grading-card-select');
+  if (gradingSelect) {
+    gradingSelect.innerHTML = gradableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
+  }
 }
 
 function toggleQuickAdd(select, quickAddEl) {
@@ -240,6 +252,43 @@ $('#form-lot').addEventListener('submit', async (e) => {
   alert(`Added ${created.length} cards from this lot — ${fmt$(body.totalCost / cardNames.length)} average each.`);
   e.target.reset();
   loadCards();
+});
+
+// ---------- Grading costs ----------
+async function loadGrading() {
+  gradingCache = await api('/api/grading');
+  renderGradingTable();
+  renderCardsTable(); // refresh so grading tags on inventory rows stay current
+}
+
+function renderGradingTable() {
+  $('#grading-table').innerHTML = `
+    <tr><th>Card</th><th>Company</th><th>Grade</th><th>Cost</th><th>Date</th><th></th></tr>
+    ${gradingCache.map(g => {
+      const c = cardsCache.find(c => c.id === g.cardId);
+      return `<tr>
+        <td data-label="Card" class="cell-title">${c ? c.player : g.cardId}</td>
+        <td data-label="Company">${g.company}</td>
+        <td data-label="Grade">${g.grade || '—'}</td>
+        <td data-label="Cost">${fmt$(g.cost)}</td>
+        <td data-label="Date">${g.date}</td>
+        <td data-label=""><button class="link-btn" data-del-grading="${g.id}">Delete</button></td>
+      </tr>`;
+    }).join('') || `<tr><td>No grading costs logged yet.</td></tr>`}
+  `;
+  $$('[data-del-grading]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('Delete this grading cost?')) return;
+    await api(`/api/grading/${btn.dataset.delGrading}`, { method: 'DELETE' });
+    loadGrading();
+  }));
+}
+
+$('#form-grading').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  await api('/api/grading', { method: 'POST', body: JSON.stringify(Object.fromEntries(fd)) });
+  e.target.reset();
+  loadGrading();
 });
 
 // ---------- Listings ----------
@@ -648,6 +697,6 @@ async function loadPerformance() {
   $('input[name="date"]').value = today;
 
   await loadCards();
-  await Promise.all([loadListings(), loadSales(), loadCash(), loadBackups()]);
+  await Promise.all([loadListings(), loadSales(), loadCash(), loadBackups(), loadGrading()]);
   await loadDashboard();
 })();

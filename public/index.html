@@ -174,6 +174,22 @@
       </form>
     </div>
     <div class="panel">
+      <h3>Add a grading cost</h3>
+      <p class="hint">Log what you paid to grade a card — it rolls into that card's cost basis automatically, so P&amp;L and on-hand value both account for it.</p>
+      <form id="form-grading" class="form-grid">
+        <select name="cardId" id="grading-card-select" required></select>
+        <select name="company"><option>PSA</option><option>BGS</option><option>SGC</option><option>CSG</option><option>Other</option></select>
+        <input type="text" name="grade" placeholder="Grade (e.g. 10, Gem Mint)" />
+        <input type="number" step="0.01" name="cost" placeholder="Grading cost ($)" required />
+        <input type="date" name="date" required />
+        <button type="submit" class="btn-primary">Add grading cost</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Grading costs</h3>
+      <div class="table-wrap"><table class="data-table" id="grading-table"></table></div>
+    </div>
+    <div class="panel">
       <h3>Inventory</h3>
       <input type="text" id="filter-cards" class="filter-input" placeholder="Filter by player or sport..." />
       <div class="table-wrap"><table class="data-table" id="cards-table"></table></div>

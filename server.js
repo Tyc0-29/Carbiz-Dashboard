@@ -153,6 +153,10 @@ app.delete('/api/cards/:id', async (req, res) => {
 });
 
 // ---------- GRADING COSTS ----------
+app.get('/api/grading', (req, res) => {
+  res.json(readDb().gradingCosts);
+});
+
 app.post('/api/grading', async (req, res) => {
   const db = readDb();
   const entry = {
