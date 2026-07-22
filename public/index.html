@@ -176,16 +176,35 @@
   <!-- IMPORT -->
   <section class="view" id="view-import">
     <div class="panel">
-      <h3>Import eBay CSV</h3>
-      <p class="hint">From eBay: Seller Hub → Orders (or Payments → Reports) → Export. Upload the CSV, map the columns, and review before importing. Sales imported this way create a placeholder card entry with $0 cost — flagged for you to fill in the real cost basis.</p>
+      <h3>Bulk import (recommended)</h3>
+      <p class="hint">Skip eBay's export entirely. Download the template below, fill it in using Excel, Google Sheets, or Numbers — one row per card — then either upload the file or just paste the rows straight in. Columns already match the site exactly, so there's no mapping step.</p>
+      <div class="import-controls">
+        <a href="/templates/purchases-template.csv" download class="file-btn">Download purchases template</a>
+        <a href="/templates/sales-template.csv" download class="file-btn">Download sales template</a>
+      </div>
+      <div class="import-controls">
+        <select id="bulk-mode">
+          <option value="purchases">I'm importing: purchases</option>
+          <option value="sales">I'm importing: sales</option>
+        </select>
+      </div>
+      <p class="hint" style="margin-top:14px;">Paste rows copied from your spreadsheet (including the header row):</p>
+      <textarea id="paste-rows" class="lot-textarea" rows="6" placeholder="Paste copied spreadsheet cells here, including the header row..."></textarea>
+      <button id="parse-pasted" class="btn-primary" style="margin-top:10px;">Parse pasted rows</button>
+      <div id="paste-mapping-area"></div>
+    </div>
+
+    <div class="panel">
+      <h3>Or upload a CSV file</h3>
+      <p class="hint">Either your filled-in template above, or eBay's own export (Seller Hub → Orders, or Payments → Reports). eBay's format is messier and won't include fees — the template is the smoother path.</p>
       <div class="import-controls">
         <label class="file-btn">
           Choose CSV
           <input type="file" id="csv-file" accept=".csv" />
         </label>
         <select id="import-mode">
-          <option value="sales">This file is: eBay sales / orders</option>
-          <option value="purchases">This file is: eBay purchases</option>
+          <option value="sales">This file is: sales / orders</option>
+          <option value="purchases">This file is: purchases</option>
         </select>
       </div>
       <div id="mapping-area"></div>

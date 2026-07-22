@@ -308,13 +308,13 @@ app.post('/api/import', async (req, res) => {
     for (const row of rows) {
       const card = {
         id: genId('card'),
-        player: row.title || 'Imported eBay sale',
+        player: row.title || 'Imported sale',
         sport: row.sport || '',
         purchaseDate: row.saleDate || new Date().toISOString().slice(0, 10),
         cost: 0,
-        source: 'eBay import',
+        source: 'Bulk import',
         status: 'sold',
-        notes: 'Auto-created from eBay sales import — set cost basis',
+        notes: 'Auto-created from bulk sales import — set cost basis',
         needsCostReview: true,
         createdAt: new Date().toISOString()
       };
@@ -332,7 +332,7 @@ app.post('/api/import', async (req, res) => {
         saleDate: row.saleDate || new Date().toISOString().slice(0, 10),
         buyer: row.buyer || '',
         orderId: row.orderId || '',
-        notes: 'Imported from eBay CSV'
+        notes: 'Imported from bulk sales file'
       };
       sale.netProceeds = recomputeNetProceeds(sale);
       db.sales.push(sale);
@@ -342,13 +342,13 @@ app.post('/api/import', async (req, res) => {
     for (const row of rows) {
       const card = {
         id: genId('card'),
-        player: row.title || 'Imported eBay purchase',
+        player: row.title || 'Imported purchase',
         sport: row.sport || '',
         purchaseDate: row.purchaseDate || new Date().toISOString().slice(0, 10),
         cost: num(row.cost),
-        source: 'eBay import',
+        source: row.source || 'Bulk import',
         status: 'in_hand',
-        notes: 'Imported from eBay purchases CSV',
+        notes: 'Imported from bulk purchases file',
         needsCostReview: false,
         createdAt: new Date().toISOString()
       };

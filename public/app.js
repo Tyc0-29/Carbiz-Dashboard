@@ -403,9 +403,11 @@ const FIELD_GUESSES = {
   shippingPaid: ['shipping cost', 'postage', 'shipping paid'],
   saleDate: ['sale date', 'date', 'order date', 'paid on date'],
   purchaseDate: ['date', 'purchase date', 'order date'],
-  cost: ['sold for', 'price', 'total price', 'item price'],
+  cost: ['cost', 'sold for', 'price', 'total price', 'item price'],
   buyer: ['buyer username', 'buyer name', 'buyer'],
-  orderId: ['order number', 'sales record number', 'order id']
+  orderId: ['order number', 'sales record number', 'order id'],
+  sport: ['sport'],
+  source: ['source']
 };
 
 function guessColumn(headers, keys) {
@@ -433,53 +435,84 @@ $('#csv-file').addEventListener('change', (e) => {
     complete: (results) => {
       parsedRows = results.data;
       csvHeaders = results.meta.fields || [];
-      renderMappingUI();
+      renderMappingUI('#mapping-area', $('#import-mode').value, csvHeaders, parsedRows, () => {
+        parsedRows = [];
+        $('#mapping-area').innerHTML = '';
+        $('#csv-file').value = '';
+      });
     }
   });
 });
 
-$('#import-mode').addEventListener('change', renderMappingUI);
+$('#import-mode').addEventListener('change', () => {
+  if (csvHeaders.length) {
+    renderMappingUI('#mapping-area', $('#import-mode').value, csvHeaders, parsedRows, () => {
+      parsedRows = [];
+      $('#mapping-area').innerHTML = '';
+      $('#csv-file').value = '';
+    });
+  }
+});
 
-function renderMappingUI() {
-  if (!csvHeaders.length) return;
-  const mode = $('#import-mode').value;
+let pastedRows = [];
+let pastedHeaders = [];
+
+$('#parse-pasted').addEventListener('click', () => {
+  const text = $('#paste-rows').value.trim();
+  if (!text) {
+    alert('Paste some rows first — include the header row from your spreadsheet.');
+    return;
+  }
+  const results = Papa.parse(text, { header: true, skipEmptyLines: true });
+  pastedRows = results.data;
+  pastedHeaders = results.meta.fields || [];
+  renderMappingUI('#paste-mapping-area', $('#bulk-mode').value, pastedHeaders, pastedRows, () => {
+    pastedRows = [];
+    $('#paste-mapping-area').innerHTML = '';
+    $('#paste-rows').value = '';
+  });
+});
+
+function renderMappingUI(areaSelector, mode, headers, rows, onDone) {
+  if (!headers.length) return;
   const fields = mode === 'sales'
-    ? ['title', 'salePrice', 'shippingCharged', 'fees', 'shippingPaid', 'saleDate', 'buyer', 'orderId']
-    : ['title', 'cost', 'purchaseDate'];
+    ? ['title', 'salePrice', 'fees', 'saleDate', 'buyer', 'orderId']
+    : ['title', 'cost', 'purchaseDate', 'sport', 'source'];
 
-  const area = $('#mapping-area');
+  const area = $(areaSelector);
+  const fieldsId = areaSelector.replace('#', '') + '-fields';
+  const runId = areaSelector.replace('#', '') + '-run';
   area.innerHTML = `
     <h4 style="font-family:var(--font-display);font-size:18px;margin:16px 0 8px;">Map columns</h4>
-    <div id="mapping-fields"></div>
-    <button id="run-import" class="btn-primary" style="margin-top:12px;">Import ${parsedRows.length} rows</button>
-    <div class="preview-table"></div>
+    <div id="${fieldsId}"></div>
+    <button id="${runId}" class="btn-primary" style="margin-top:12px;">Import ${rows.length} rows</button>
   `;
 
-  const fieldsDiv = $('#mapping-fields');
+  const fieldsDiv = $('#' + fieldsId);
   fields.forEach(f => {
-    const guess = guessColumn(csvHeaders, FIELD_GUESSES[f] || []);
+    const guess = guessColumn(headers, FIELD_GUESSES[f] || []);
     const row = document.createElement('div');
     row.className = 'mapping-row';
     row.innerHTML = `
       <label>${f}</label>
       <select data-field="${f}">
         <option value="">— skip —</option>
-        ${csvHeaders.map(h => `<option value="${h}" ${h === guess ? 'selected' : ''}>${h}</option>`).join('')}
+        ${headers.map(h => `<option value="${h}" ${h === guess ? 'selected' : ''}>${h}</option>`).join('')}
       </select>
     `;
     fieldsDiv.appendChild(row);
   });
 
-  $('#run-import').addEventListener('click', async () => {
+  $('#' + runId).addEventListener('click', async () => {
     const mapping = {};
-    $$('#mapping-fields select').forEach(sel => { mapping[sel.dataset.field] = sel.value; });
+    $$(`#${fieldsId} select`).forEach(sel => { mapping[sel.dataset.field] = sel.value; });
 
-    const rows = parsedRows.map(row => {
+    const outRows = rows.map(row => {
       const out = {};
       Object.entries(mapping).forEach(([field, col]) => {
         if (!col) return;
         let val = row[col];
-        if (['salePrice', 'shippingCharged', 'fees', 'shippingPaid', 'cost'].includes(field)) {
+        if (['salePrice', 'fees', 'cost'].includes(field)) {
           val = parseFloat(String(val).replace(/[^0-9.-]/g, '')) || 0;
         }
         out[field] = val;
@@ -487,11 +520,9 @@ function renderMappingUI() {
       return out;
     });
 
-    const res = await api('/api/import', { method: 'POST', body: JSON.stringify({ mode, rows }) });
+    const res = await api('/api/import', { method: 'POST', body: JSON.stringify({ mode, rows: outRows }) });
     alert(`Imported ${res.created.cards} card(s)${res.created.sales ? ` and ${res.created.sales} sale(s)` : ''}.`);
-    parsedRows = [];
-    $('#mapping-area').innerHTML = '';
-    $('#csv-file').value = '';
+    onDone();
     loadCards();
   });
 }
