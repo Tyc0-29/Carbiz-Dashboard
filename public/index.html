@@ -13,11 +13,11 @@
 
 <header class="topbar">
   <div class="brand">
-    <span class="brand-badge">
-      <span class="brand-badge-top">CERTIFIED</span>
-      <span class="brand-badge-main">TyCo's</span>
-    </span>
-    <span class="brand-name">Cardbiz</span>
+    <div class="cert-mark">
+      <div class="cert-mark-top">AUTHENTICATED · GRADED · TRACKED</div>
+      <div class="cert-mark-main">TyCo's</div>
+      <div class="cert-mark-sub">CARDBIZ</div>
+    </div>
   </div>
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="dashboard">Dashboard</button>
@@ -96,6 +96,7 @@
     </div>
     <div class="panel">
       <h3>Inventory</h3>
+      <input type="text" id="filter-cards" class="filter-input" placeholder="Filter by player or sport..." />
       <div class="table-wrap"><table class="data-table" id="cards-table"></table></div>
     </div>
   </section>
@@ -105,16 +106,22 @@
     <div class="panel">
       <h3>Add a listing</h3>
       <form id="form-listing" class="form-grid">
-        <select name="cardId" required></select>
+        <select name="cardId" id="listing-card-select" required></select>
         <select name="platform"><option>eBay</option><option>COMC</option><option>Whatnot</option><option>Facebook</option><option>Other</option></select>
         <input type="number" step="0.01" name="listPrice" placeholder="List price ($)" required />
         <input type="date" name="listDate" required />
         <input type="text" name="ebayListingId" placeholder="eBay listing ID (optional)" />
+        <div id="quick-add-listing-card" class="quick-add hidden">
+          <input type="text" id="new-listing-card-player" placeholder="New card name" />
+          <input type="text" id="new-listing-card-sport" placeholder="Sport (optional)" />
+          <input type="number" step="0.01" id="new-listing-card-cost" placeholder="What you paid (optional, defaults to $0)" />
+        </div>
         <button type="submit" class="btn-primary">Add listing</button>
       </form>
     </div>
     <div class="panel">
       <h3>Listings</h3>
+      <input type="text" id="filter-listings" class="filter-input" placeholder="Filter by player or sport..." />
       <div class="table-wrap"><table class="data-table" id="listings-table"></table></div>
     </div>
   </section>
@@ -142,6 +149,7 @@
     </div>
     <div class="panel">
       <h3>Sales</h3>
+      <input type="text" id="filter-sales" class="filter-input" placeholder="Filter by player or sport..." />
       <div class="table-wrap"><table class="data-table" id="sales-table"></table></div>
     </div>
   </section>

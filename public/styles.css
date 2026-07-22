@@ -4,8 +4,8 @@
   --white: #FFFFFF;
   --paper: #F4F2ED;
   --paper-line: #E4E0D6;
-  --red: #D01730;
-  --red-dark: #A01126;
+  --red: #B01B2E;
+  --red-dark: #7E1220;
   --red-wash: #FBEAEC;
   --navy: #1C2B4A;
   --green: #1F7A43;
@@ -46,39 +46,38 @@ body {
   gap: 12px;
 }
 
-.brand-badge {
-  display: flex;
+.cert-mark {
+  display: inline-flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: var(--red);
-  border: 2px solid var(--white);
-  border-radius: 4px;
-  padding: 3px 10px;
-  line-height: 1;
+  align-items: flex-start;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-radius: 2px;
+  padding: 5px 14px 7px;
+  line-height: 1.05;
 }
-.brand-badge-top {
+.cert-mark-top {
   font-family: var(--font-body);
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  color: var(--white);
-  opacity: 0.85;
+  font-size: 7.5px;
+  font-weight: 800;
+  letter-spacing: 1.6px;
+  color: var(--red);
+  margin-bottom: 2px;
 }
-.brand-badge-main {
+.cert-mark-main {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 27px;
   font-weight: 600;
-  color: var(--white);
-  letter-spacing: 0.5px;
+  color: var(--ink);
+  letter-spacing: 0.3px;
 }
-
-.brand-name {
-  font-family: var(--font-display);
-  font-size: 32px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: var(--white);
+.cert-mark-sub {
+  font-family: var(--font-body);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 3.5px;
+  color: var(--ink);
+  margin-top: -3px;
 }
 
 .tabs {
@@ -136,7 +135,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
 .score-cell {
   background: var(--white);
   border: 1px solid var(--paper-line);
-  border-radius: 6px;
+  border-radius: 3px;
   overflow: hidden;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
@@ -172,7 +171,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   border: 1px solid var(--red);
   color: var(--red-dark);
   padding: 12px 16px;
-  border-radius: 6px;
+  border-radius: 3px;
   font-size: 13px;
   margin-bottom: 20px;
   font-weight: 500;
@@ -190,7 +189,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   background: var(--white);
   color: var(--text-body);
   border: 1px solid var(--paper-line);
-  border-radius: 6px;
+  border-radius: 3px;
   padding: 22px 24px;
   margin-bottom: 20px;
 }
@@ -211,6 +210,17 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   margin: -6px 0 16px;
   line-height: 1.5;
 }
+.filter-input {
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 9px 12px;
+  border: 1px solid var(--paper-line);
+  border-radius: 3px;
+  margin-bottom: 14px;
+  background: var(--paper);
+}
+.filter-input:focus { outline: 2px solid var(--red); outline-offset: 1px; background: var(--white); }
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -229,7 +239,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   padding: 12px;
   background: var(--red-wash);
   border: 1px dashed var(--red);
-  border-radius: 6px;
+  border-radius: 3px;
 }
 .quick-add input {
   font-family: var(--font-body);
@@ -267,7 +277,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
 .status-chip {
   display: inline-block;
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: 2px;
   font-size: 11px;
   font-weight: 700;
   font-family: var(--font-body);
@@ -384,7 +394,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   .data-table tr {
     margin-bottom: 12px;
     border: 1px solid var(--paper-line);
-    border-radius: 6px;
+    border-radius: 3px;
     padding: 6px 4px;
     background: var(--white);
   }

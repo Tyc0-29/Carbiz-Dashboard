@@ -16,6 +16,12 @@ async function api(path, opts = {}) {
   return res.json();
 }
 
+function matchesFilter(card, query) {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return (card?.player || '').toLowerCase().includes(q) || (card?.sport || '').toLowerCase().includes(q);
+}
+
 // ---------- Tabs ----------
 $$('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -29,15 +35,15 @@ $$('.tab').forEach(tab => {
 
 // ---------- State ----------
 let cardsCache = [];
+let listingsCache = [];
+let salesCache = [];
 
 // ---------- Dashboard ----------
 async function loadDashboard() {
-  const [d, cards, sales, listings, cash] = await Promise.all([
+  const [d, cards, sales] = await Promise.all([
     api('/api/dashboard'),
     api('/api/cards'),
-    api('/api/sales'),
-    api('/api/listings'),
-    api('/api/cash-adjustments')
+    api('/api/sales')
   ]);
 
   const pnlEl = $('#sb-pnl');
@@ -73,7 +79,6 @@ async function loadDashboard() {
     <tr><td>Cash deposits logged</td><td>${fmt$(d.cash.cashDeposits)}</td></tr>
   `;
 
-  // activity feed: merge recent purchases + sales, sort by date desc, take 10
   const events = [];
   cards.forEach(c => events.push({ date: c.purchaseDate, label: `Bought ${c.player}`, amount: -c.cost }));
   sales.forEach(s => {
@@ -92,12 +97,17 @@ async function loadDashboard() {
 // ---------- Inventory ----------
 async function loadCards() {
   cardsCache = await api('/api/cards');
-  const sales = await api('/api/sales');
-  const soldByCard = Object.fromEntries(sales.map(s => [s.cardId, s]));
+  renderCardsTable();
+  populateCardDropdowns();
+}
+
+function renderCardsTable() {
+  const query = $('#filter-cards')?.value || '';
+  const rows = cardsCache.filter(c => matchesFilter(c, query));
 
   $('#cards-table').innerHTML = `
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Status</th><th>Source</th><th></th></tr>
-    ${cardsCache.map(c => `
+    ${rows.map(c => `
       <tr class="row-edge ${c.status}">
         <td data-label="Card">${c.player}${c.needsCostReview ? ' ⚠' : ''}</td>
         <td data-label="Sport">${c.sport || '—'}</td>
@@ -107,7 +117,7 @@ async function loadCards() {
         <td data-label="Source">${c.source || '—'}</td>
         <td data-label=""><button class="link-btn" data-del-card="${c.id}">Delete</button></td>
       </tr>
-    `).join('')}
+    `).join('') || `<tr><td>No matching cards.</td></tr>`}
   `;
 
   $$('[data-del-card]').forEach(btn => btn.addEventListener('click', async () => {
@@ -115,9 +125,9 @@ async function loadCards() {
     await api(`/api/cards/${btn.dataset.delCard}`, { method: 'DELETE' });
     loadCards();
   }));
-
-  populateCardDropdowns();
 }
+
+$('#filter-cards').addEventListener('input', renderCardsTable);
 
 function cardLabel(c) {
   const date = c.purchaseDate || '';
@@ -125,32 +135,32 @@ function cardLabel(c) {
 }
 
 function populateCardDropdowns() {
-  // Listing dropdown: only cards not already listed or sold
+  // Listing dropdown: cards not already listed/sold, plus a quick-add option
   const listableCards = cardsCache.filter(c => c.status === 'in_hand');
-  const listingSelect = $('select[name="cardId"]', $('#form-listing'));
-  listingSelect.innerHTML = listableCards.length
-    ? listableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('')
-    : `<option value="">No in-hand cards available to list</option>`;
+  const listingSelect = $('#listing-card-select');
+  const listableOptions = listableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
+  listingSelect.innerHTML = `<option value="__new__">+ New card (not in inventory yet)</option>` + listableOptions;
 
-  // Sale dropdown: any card not already sold (in_hand or listed), plus a quick-add option
+  // Sale dropdown: any card not already sold, plus a quick-add option
   const sellableCards = cardsCache.filter(c => c.status !== 'sold');
-  const saleSelect = $('select[name="cardId"]', $('#form-sale'));
+  const saleSelect = $('#sale-card-select');
   const sellableOptions = sellableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
   saleSelect.innerHTML = `<option value="__new__">+ New card (not in inventory yet)</option>` + sellableOptions;
-  toggleQuickAdd();
+
+  toggleQuickAdd(saleSelect, $('#quick-add-card'));
+  toggleQuickAdd(listingSelect, $('#quick-add-listing-card'));
 }
 
-function toggleQuickAdd() {
-  const select = $('#sale-card-select');
-  const quickAdd = $('#quick-add-card');
+function toggleQuickAdd(select, quickAddEl) {
   if (select.value === '__new__') {
-    quickAdd.classList.remove('hidden');
+    quickAddEl.classList.remove('hidden');
   } else {
-    quickAdd.classList.add('hidden');
+    quickAddEl.classList.add('hidden');
   }
 }
 
-$('#sale-card-select').addEventListener('change', toggleQuickAdd);
+$('#sale-card-select').addEventListener('change', (e) => toggleQuickAdd(e.target, $('#quick-add-card')));
+$('#listing-card-select').addEventListener('change', (e) => toggleQuickAdd(e.target, $('#quick-add-listing-card')));
 
 // ---------- Already-owned checkbox ----------
 const alreadyOwnedCheckbox = $('#already-owned');
@@ -186,10 +196,17 @@ $('#form-card').addEventListener('submit', async (e) => {
 
 // ---------- Listings ----------
 async function loadListings() {
-  const listings = await api('/api/listings');
+  listingsCache = await api('/api/listings');
+  renderListingsTable();
+}
+
+function renderListingsTable() {
+  const query = $('#filter-listings')?.value || '';
+  const rows = listingsCache.filter(l => matchesFilter(cardsCache.find(c => c.id === l.cardId), query));
+
   $('#listings-table').innerHTML = `
     <tr><th>Card</th><th>Platform</th><th>List price</th><th>Date</th><th>Status</th><th></th></tr>
-    ${listings.map(l => {
+    ${rows.map(l => {
       const c = cardsCache.find(c => c.id === l.cardId);
       return `<tr>
         <td data-label="Card">${c ? c.player : l.cardId}</td>
@@ -199,7 +216,7 @@ async function loadListings() {
         <td data-label="Status"><span class="status-chip listed">${l.status}</span></td>
         <td data-label=""><button class="link-btn" data-del-listing="${l.id}">Delete</button></td>
       </tr>`;
-    }).join('')}
+    }).join('') || `<tr><td>No matching listings.</td></tr>`}
   `;
   $$('[data-del-listing]').forEach(btn => btn.addEventListener('click', async () => {
     await api(`/api/listings/${btn.dataset.delListing}`, { method: 'DELETE' });
@@ -207,21 +224,54 @@ async function loadListings() {
   }));
 }
 
+$('#filter-listings').addEventListener('input', renderListingsTable);
+
 $('#form-listing').addEventListener('submit', async (e) => {
   e.preventDefault();
   const fd = new FormData(e.target);
-  await api('/api/listings', { method: 'POST', body: JSON.stringify(Object.fromEntries(fd)) });
+  const body = Object.fromEntries(fd);
+
+  if (body.cardId === '__new__') {
+    const player = $('#new-listing-card-player').value.trim();
+    if (!player) {
+      alert('Enter a name for the new card before adding the listing.');
+      return;
+    }
+    const costVal = $('#new-listing-card-cost').value;
+    const newCard = await api('/api/cards', {
+      method: 'POST',
+      body: JSON.stringify({
+        player,
+        sport: $('#new-listing-card-sport').value.trim(),
+        purchaseDate: body.listDate,
+        cost: costVal || 0,
+        source: 'Added at time of listing',
+        needsCostReview: !costVal
+      })
+    });
+    body.cardId = newCard.id;
+  }
+
+  await api('/api/listings', { method: 'POST', body: JSON.stringify(body) });
   e.target.reset();
+  $('#quick-add-listing-card').classList.add('hidden');
   loadCards();
   loadListings();
 });
 
 // ---------- Sales ----------
 async function loadSales() {
-  const sales = await api('/api/sales');
+  salesCache = await api('/api/sales');
+  renderSalesTable();
+}
+
+function renderSalesTable() {
+  const query = $('#filter-sales')?.value || '';
+  const rows = salesCache.filter(s => matchesFilter(cardsCache.find(c => c.id === s.cardId), query));
+
   $('#sales-table').innerHTML = `
     <tr><th>Card</th><th>Platform</th><th>Sale price</th><th>Fees</th><th>Net</th><th>Date</th><th></th></tr>
-    ${sales.map(s => {
+    ${rows.map(s => {
       const c = cardsCache.find(c => c.id === s.cardId);
       return `<tr>
         <td data-label="Card">${c ? c.player : s.cardId}</td>
@@ -232,7 +282,7 @@ async function loadSales() {
         <td data-label="Date">${s.saleDate}</td>
         <td data-label=""><button class="link-btn" data-del-sale="${s.id}">Delete</button></td>
       </tr>`;
-    }).join('')}
+    }).join('') || `<tr><td>No matching sales.</td></tr>`}
   `;
   $$('[data-del-sale]').forEach(btn => btn.addEventListener('click', async () => {
     await api(`/api/sales/${btn.dataset.delSale}`, { method: 'DELETE' });
@@ -240,6 +290,8 @@ async function loadSales() {
     loadSales();
   }));
 }
+
+$('#filter-sales').addEventListener('input', renderSalesTable);
 
 $('#form-sale').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -320,7 +372,6 @@ function guessColumn(headers, keys) {
     const idx = lower.indexOf(key);
     if (idx !== -1) return headers[idx];
   }
-  // partial match fallback
   for (const key of keys) {
     const idx = lower.findIndex(h => h.includes(key));
     if (idx !== -1) return headers[idx];
