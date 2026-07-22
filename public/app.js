@@ -60,6 +60,8 @@ async function loadDashboard() {
   $('#sb-avail-cost-sub').textContent = `${d.inventory.availableCount} card${d.inventory.availableCount === 1 ? '' : 's'}`;
   $('#sb-avail-est').textContent = fmt$(d.inventory.availableEstimatedValue);
   $('#sb-avail-est-sub').textContent = `${d.inventory.availableWithEstimate} of ${d.inventory.availableCount} priced`;
+  $('#sb-listed').textContent = fmt$(d.inventory.listedAskingTotal);
+  $('#sb-listed-sub').textContent = `${d.inventory.listedCount} card${d.inventory.listedCount === 1 ? '' : 's'} listed`;
   $('#sb-invested').textContent = fmt$(d.totals.totalPurchaseCost + d.totals.totalGradingCost);
 
   const flagBanner = $('#flag-banner');
