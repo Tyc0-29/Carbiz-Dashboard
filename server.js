@@ -81,6 +81,7 @@ app.post('/api/cards', async (req, res) => {
     notes: req.body.notes || '',
     needsCostReview: !!req.body.needsCostReview,
     alreadyOwned: !!req.body.alreadyOwned,
+    estimatedValue: (req.body.estimatedValue !== undefined && req.body.estimatedValue !== '') ? num(req.body.estimatedValue) : null,
     createdAt: new Date().toISOString()
   };
   db.cards.push(card);
@@ -94,6 +95,11 @@ app.put('/api/cards/:id', async (req, res) => {
   if (idx === -1) return res.status(404).json({ error: 'Card not found' });
   db.cards[idx] = { ...db.cards[idx], ...req.body, id: db.cards[idx].id };
   if ('cost' in req.body) db.cards[idx].cost = num(req.body.cost);
+  if ('estimatedValue' in req.body) {
+    db.cards[idx].estimatedValue = (req.body.estimatedValue === '' || req.body.estimatedValue === null)
+      ? null
+      : num(req.body.estimatedValue);
+  }
   await writeDb(db);
   res.json(db.cards[idx]);
 });
@@ -404,6 +410,10 @@ app.get('/api/dashboard', (req, res) => {
   const soldCardIds = new Set(db.sales.map(s => s.cardId));
   const onHandCards = db.cards.filter(c => !soldCardIds.has(c.id));
   const onHandCostValue = onHandCards.reduce((s, c) => s + costBasisForCard(db, c.id), 0);
+  const onHandEstimatedValue = onHandCards.reduce((s, c) => {
+    return s + (c.estimatedValue !== null && c.estimatedValue !== undefined ? num(c.estimatedValue) : costBasisForCard(db, c.id));
+  }, 0);
+  const onHandWithEstimate = onHandCards.filter(c => c.estimatedValue !== null && c.estimatedValue !== undefined).length;
 
   const realizedCostBasis = db.sales.reduce((s, s2) => s + costBasisForCard(db, s2.cardId), 0);
   const realizedPnL = +(totalNetProceeds - realizedCostBasis).toFixed(2);
@@ -426,7 +436,9 @@ app.get('/api/dashboard', (req, res) => {
     },
     inventory: {
       onHandCount: onHandCards.length,
-      onHandCostValue: +onHandCostValue.toFixed(2)
+      onHandCostValue: +onHandCostValue.toFixed(2),
+      onHandEstimatedValue: +onHandEstimatedValue.toFixed(2),
+      onHandWithEstimate
     },
     pnl: {
       realizedCostBasis: +realizedCostBasis.toFixed(2),

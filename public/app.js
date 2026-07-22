@@ -54,6 +54,8 @@ async function loadDashboard() {
   $('#sb-cash').textContent = fmt$(d.cash.cashInHand);
   $('#sb-inv').textContent = fmt$(d.inventory.onHandCostValue);
   $('#sb-inv-sub').textContent = `${d.inventory.onHandCount} cards, at cost`;
+  $('#sb-est').textContent = fmt$(d.inventory.onHandEstimatedValue);
+  $('#sb-est-sub').textContent = `${d.inventory.onHandWithEstimate} of ${d.inventory.onHandCount} priced`;
   $('#sb-invested').textContent = fmt$(d.totals.totalPurchaseCost + d.totals.totalGradingCost);
 
   const flagBanner = $('#flag-banner');
@@ -106,19 +108,34 @@ function renderCardsTable() {
   const rows = cardsCache.filter(c => matchesFilter(c, query));
 
   $('#cards-table').innerHTML = `
-    <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Status</th><th>Source</th><th></th></tr>
+    <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Est. Value</th><th>Status</th><th>Source</th><th></th></tr>
     ${rows.map(c => `
       <tr class="row-edge ${c.status}">
         <td data-label="Card" class="cell-title">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.alreadyOwned ? ' <span class="owned-tag">OWNED</span>' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}</td>
         <td data-label="Sport">${c.sport || '—'}</td>
         <td data-label="Purchased">${c.purchaseDate}</td>
         <td data-label="Cost">${fmt$(c.cost)}</td>
+        <td data-label="Est. Value">
+          <span class="est-value-wrap">
+            <input type="number" step="0.01" class="est-value-input" data-card-id="${c.id}" value="${c.estimatedValue ?? ''}" placeholder="—" />
+            <a href="https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(c.player)}&LH_Sold=1&LH_Complete=1" target="_blank" rel="noopener" class="comps-link" title="Check eBay sold comps">🔍</a>
+          </span>
+        </td>
         <td data-label="Status"><span class="status-chip ${c.status}">${c.status.replace('_',' ')}</span></td>
         <td data-label="Source">${c.source || '—'}</td>
         <td data-label=""><button class="link-btn" data-del-card="${c.id}">Delete</button>${c.needsCostReview ? ` <button class="link-btn" data-clear-flag="${c.id}">Mark already owned</button>` : ''}</td>
       </tr>
     `).join('') || `<tr><td>No matching cards.</td></tr>`}
   `;
+
+  $$('.est-value-input').forEach(input => input.addEventListener('change', async () => {
+    await api(`/api/cards/${input.dataset.cardId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ estimatedValue: input.value })
+    });
+    const card = cardsCache.find(c => c.id === input.dataset.cardId);
+    if (card) card.estimatedValue = input.value === '' ? null : Number(input.value);
+  }));
 
   $$('[data-clear-flag]').forEach(btn => btn.addEventListener('click', async () => {
     await api(`/api/cards/${btn.dataset.clearFlag}`, {

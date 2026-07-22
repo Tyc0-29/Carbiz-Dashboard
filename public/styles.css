@@ -128,7 +128,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
 /* ---------- Scoreboard — styled like a certification label ---------- */
 .scoreboard {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: 14px;
   margin-bottom: 24px;
 }
@@ -368,6 +368,24 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   margin-left: 5px;
   vertical-align: middle;
 }
+.est-value-wrap { display: inline-flex; align-items: center; gap: 5px; }
+.est-value-input {
+  width: 80px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 4px 6px;
+  border: 1px solid var(--paper-line);
+  border-radius: 3px;
+  text-align: right;
+}
+.est-value-input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.comps-link {
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.75;
+}
+.comps-link:hover { opacity: 1; }
 .btn-primary {
   grid-column: span 1;
   background: var(--red);
@@ -425,7 +443,6 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
 .preview-table { font-size: 11px; margin-top: 14px; }
 
 @media (max-width: 860px) {
-  .scoreboard { grid-template-columns: repeat(2, 1fr); }
   .grid-2 { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .quick-add { grid-template-columns: 1fr; }
