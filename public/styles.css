@@ -26,6 +26,7 @@ body {
   color: var(--text-body);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* ---------- Topbar ---------- */
@@ -321,6 +322,9 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
+.form-grid > * {
+  min-width: 0; /* allow grid items to shrink below their content's intrinsic width */
+}
 .form-grid input, .form-grid select {
   font-family: var(--font-body);
   font-size: 13px;
@@ -329,6 +333,10 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   border-radius: 4px;
   background: var(--white);
   color: var(--text-body);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .form-grid select, #import-mode {
   -webkit-appearance: none;
@@ -396,7 +404,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   opacity: 0.75;
 }
 .comps-link:hover { opacity: 1; }
-.inline-edit, .inline-edit-input {
+.inline-edit, .inline-edit-input, .card-edit-input {
   font-family: var(--font-mono);
   font-size: 12.5px;
   padding: 4px 6px;
@@ -406,7 +414,7 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   color: var(--text-body);
   max-width: 130px;
 }
-.inline-edit:focus, .inline-edit-input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.inline-edit:focus, .inline-edit-input:focus, .card-edit-input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
 select.inline-edit.status-chip {
   font-weight: 700;
   text-transform: uppercase;
@@ -498,6 +506,11 @@ select.inline-edit.status-chip {
     border-bottom: 1px solid var(--paper-line);
     text-align: right;
     min-height: 26px;
+    overflow-wrap: anywhere;
+  }
+  .data-table td > *:not(.est-value-wrap) { min-width: 0; }
+  .data-table td::before {
+    flex-shrink: 0;
   }
   .data-table td:last-child { border-bottom: none; }
   .data-table td::before {

@@ -108,13 +108,36 @@ async function loadCards() {
   populateCardDropdowns();
 }
 
+let editingCardId = null;
+
 function renderCardsTable() {
   const query = $('#filter-cards')?.value || '';
   const rows = cardsCache.filter(c => matchesFilter(c, query));
 
   $('#cards-table').innerHTML = `
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Est. Value</th><th>Status</th><th>Source</th><th></th></tr>
-    ${rows.map(c => `
+    ${rows.map(c => {
+      if (c.id === editingCardId) {
+        return `
+      <tr class="row-edge ${c.status}">
+        <td data-label="Card"><input type="text" class="card-edit-input" data-edit-field="player" value="${c.player.replace(/"/g, '&quot;')}" /></td>
+        <td data-label="Sport"><input type="text" class="card-edit-input" data-edit-field="sport" value="${(c.sport || '').replace(/"/g, '&quot;')}" /></td>
+        <td data-label="Purchased"><input type="date" class="card-edit-input" data-edit-field="purchaseDate" value="${c.purchaseDate}" /></td>
+        <td data-label="Cost"><input type="number" step="0.01" class="card-edit-input" data-edit-field="cost" value="${c.cost}" /></td>
+        <td data-label="Est. Value"><input type="number" step="0.01" class="card-edit-input" data-edit-field="estimatedValue" value="${c.estimatedValue ?? ''}" /></td>
+        <td data-label="Status">
+          <select class="card-edit-input" data-edit-field="status">
+            ${['in_hand', 'listed', 'sold'].map(s => `<option value="${s}" ${s === c.status ? 'selected' : ''}>${s.replace('_', ' ')}</option>`).join('')}
+          </select>
+        </td>
+        <td data-label="Source"><input type="text" class="card-edit-input" data-edit-field="source" value="${(c.source || '').replace(/"/g, '&quot;')}" /></td>
+        <td data-label="">
+          <button class="link-btn" data-save-card="${c.id}">Save</button>
+          <button class="link-btn" data-cancel-card>Cancel</button>
+        </td>
+      </tr>`;
+      }
+      return `
       <tr class="row-edge ${c.status}">
         <td data-label="Card" class="cell-title">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.alreadyOwned ? ' <span class="owned-tag">OWNED</span>' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}${gradingTotalForCard(c.id) > 0 ? ` <span class="owned-tag" style="color:var(--navy);background:#DCE6F5;">GRADED +${fmt$(gradingTotalForCard(c.id))}</span>` : ''}</td>
         <td data-label="Sport">${c.sport || '—'}</td>
@@ -128,10 +151,35 @@ function renderCardsTable() {
         </td>
         <td data-label="Status"><span class="status-chip ${c.status}">${c.status.replace('_',' ')}</span></td>
         <td data-label="Source">${c.source || '—'}</td>
-        <td data-label=""><button class="link-btn" data-del-card="${c.id}">Delete</button>${c.needsCostReview ? ` <button class="link-btn" data-clear-flag="${c.id}">Mark already owned</button>` : ''}</td>
-      </tr>
-    `).join('') || `<tr><td>No matching cards.</td></tr>`}
+        <td data-label="">
+          <button class="link-btn" data-edit-card="${c.id}">Edit</button>
+          <button class="link-btn" data-del-card="${c.id}">Delete</button>
+          ${c.needsCostReview ? ` <button class="link-btn" data-clear-flag="${c.id}">Mark already owned</button>` : ''}
+        </td>
+      </tr>`;
+    }).join('') || `<tr><td>No matching cards.</td></tr>`}
   `;
+
+  $$('[data-edit-card]').forEach(btn => btn.addEventListener('click', () => {
+    editingCardId = btn.dataset.editCard;
+    renderCardsTable();
+  }));
+
+  $$('[data-cancel-card]').forEach(btn => btn.addEventListener('click', () => {
+    editingCardId = null;
+    renderCardsTable();
+  }));
+
+  $$('[data-save-card]').forEach(btn => btn.addEventListener('click', async () => {
+    const row = btn.closest('tr');
+    const body = {};
+    row.querySelectorAll('[data-edit-field]').forEach(el => { body[el.dataset.editField] = el.value; });
+    await api(`/api/cards/${btn.dataset.saveCard}`, { method: 'PUT', body: JSON.stringify(body) });
+    editingCardId = null;
+    loadCards();
+    loadListings();
+    loadSales();
+  }));
 
   $$('.est-value-input').forEach(input => input.addEventListener('change', async () => {
     await api(`/api/cards/${input.dataset.cardId}`, {
@@ -379,6 +427,8 @@ async function loadSales() {
   renderSalesTable();
 }
 
+let editingSaleId = null;
+
 function renderSalesTable() {
   const query = $('#filter-sales')?.value || '';
   const rows = salesCache.filter(s => matchesFilter(cardsCache.find(c => c.id === s.cardId), query));
@@ -387,6 +437,24 @@ function renderSalesTable() {
     <tr><th>Card</th><th>Platform</th><th>Sale price</th><th>Fees</th><th>Net</th><th>Date</th><th></th></tr>
     ${rows.map(s => {
       const c = cardsCache.find(c => c.id === s.cardId);
+      if (s.id === editingSaleId) {
+        return `<tr>
+        <td data-label="Card" class="cell-title">${c ? c.player : s.cardId}</td>
+        <td data-label="Platform">
+          <select class="card-edit-input" data-edit-field="platform">
+            ${['eBay','COMC','Whatnot','Facebook','Other'].map(p => `<option value="${p}" ${p === s.platform ? 'selected' : ''}>${p}</option>`).join('')}
+          </select>
+        </td>
+        <td data-label="Sale price"><input type="number" step="0.01" class="card-edit-input" data-edit-field="salePrice" value="${s.salePrice}" /></td>
+        <td data-label="Fees"><input type="number" step="0.01" class="card-edit-input" data-edit-field="fees" value="${s.fees}" /></td>
+        <td data-label="Net">${fmt$(s.netProceeds)}</td>
+        <td data-label="Date"><input type="date" class="card-edit-input" data-edit-field="saleDate" value="${s.saleDate}" /></td>
+        <td data-label="">
+          <button class="link-btn" data-save-sale="${s.id}">Save</button>
+          <button class="link-btn" data-cancel-sale>Cancel</button>
+        </td>
+      </tr>`;
+      }
       return `<tr>
         <td data-label="Card" class="cell-title">${c ? c.player : s.cardId}</td>
         <td data-label="Platform">${s.platform}</td>
@@ -394,10 +462,33 @@ function renderSalesTable() {
         <td data-label="Fees">${fmt$(s.fees)}</td>
         <td data-label="Net"><strong>${fmt$(s.netProceeds)}</strong></td>
         <td data-label="Date">${s.saleDate}</td>
-        <td data-label=""><button class="link-btn" data-del-sale="${s.id}">Delete</button></td>
+        <td data-label="">
+          <button class="link-btn" data-edit-sale="${s.id}">Edit</button>
+          <button class="link-btn" data-del-sale="${s.id}">Delete</button>
+        </td>
       </tr>`;
     }).join('') || `<tr><td>No matching sales.</td></tr>`}
   `;
+
+  $$('[data-edit-sale]').forEach(btn => btn.addEventListener('click', () => {
+    editingSaleId = btn.dataset.editSale;
+    renderSalesTable();
+  }));
+
+  $$('[data-cancel-sale]').forEach(btn => btn.addEventListener('click', () => {
+    editingSaleId = null;
+    renderSalesTable();
+  }));
+
+  $$('[data-save-sale]').forEach(btn => btn.addEventListener('click', async () => {
+    const row = btn.closest('tr');
+    const body = {};
+    row.querySelectorAll('[data-edit-field]').forEach(el => { body[el.dataset.editField] = el.value; });
+    await api(`/api/sales/${btn.dataset.saveSale}`, { method: 'PUT', body: JSON.stringify(body) });
+    editingSaleId = null;
+    loadSales();
+  }));
+
   $$('[data-del-sale]').forEach(btn => btn.addEventListener('click', async () => {
     if (!confirm('Delete this sale? The card will go back to "in hand".')) return;
     await api(`/api/sales/${btn.dataset.delSale}`, { method: 'DELETE' });
@@ -471,6 +562,39 @@ async function loadBackups() {
       `).join('')
     : '<div class="activity-row"><span>No backups yet — the first one is created shortly after the site starts running.</span></div>';
 }
+
+$('#restore-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const statusEl = $('#restore-status');
+  const confirmed = confirm(
+    `This will REPLACE everything currently in the site with the contents of "${file.name}". ` +
+    `Your current data will be snapshotted first, but this cannot be casually undone. Continue?`
+  );
+  if (!confirmed) {
+    e.target.value = '';
+    return;
+  }
+
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const res = await api('/api/restore', { method: 'POST', body: JSON.stringify(data) });
+    statusEl.textContent = `Restored: ${res.counts.cards} cards, ${res.counts.listings} listings, ${res.counts.sales} sales, ${res.counts.gradingCosts} grading entries, ${res.counts.cashAdjustments} cash adjustments.`;
+    e.target.value = '';
+    loadCards();
+    loadListings();
+    loadSales();
+    loadCash();
+    loadGrading();
+    loadBackups();
+    loadDashboard();
+  } catch (err) {
+    statusEl.textContent = `Restore failed: ${err.message}. Make sure this is a valid backup file (exported from this site).`;
+    e.target.value = '';
+  }
+});
 
 $('#form-cash').addEventListener('submit', async (e) => {
   e.preventDefault();

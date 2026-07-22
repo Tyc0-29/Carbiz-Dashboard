@@ -11,6 +11,15 @@ const PORT = process.env.PORT || 3000;
 const BACKUP_DIR = path.join(__dirname, 'data', 'backups');
 const BACKUP_RETENTION_DAYS = 30;
 
+console.log('='.repeat(60));
+console.log('DATA PATH DIAGNOSTIC — verify this matches your Render disk mount path');
+console.log('DB_PATH:', DB_PATH);
+console.log('BACKUP_DIR:', BACKUP_DIR);
+console.log('Existing card count at boot:', (() => {
+  try { return readDb().cards.length; } catch { return 'unreadable'; }
+})());
+console.log('='.repeat(60));
+
 // ---------- automatic same-disk backups ----------
 // Snapshots db.json daily so an in-app mistake or bug can be recovered from,
 // independent of the manual Export button. This does NOT protect against the
@@ -410,6 +419,37 @@ app.get('/api/export', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="cardbiz-backup-${stamp}.json"`);
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify(db, null, 2));
+});
+
+// Restore overwrites current data with an uploaded export/backup file.
+// The current state is snapshotted first (as a safety-of-safety-nets) so a
+// bad restore can itself be undone by restoring the pre-restore snapshot.
+app.post('/api/restore', async (req, res) => {
+  const incoming = req.body;
+  const requiredKeys = ['cards', 'listings', 'sales', 'gradingCosts', 'cashAdjustments'];
+  const isValid = incoming && requiredKeys.every(k => Array.isArray(incoming[k]));
+  if (!isValid) {
+    return res.status(400).json({ error: 'File does not look like a valid Cardbiz backup (missing expected fields).' });
+  }
+
+  try {
+    if (fs.existsSync(DB_PATH)) {
+      if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      fs.copyFileSync(DB_PATH, path.join(BACKUP_DIR, `pre-restore-${stamp}.json`));
+    }
+  } catch (err) {
+    console.error('Pre-restore snapshot failed:', err.message);
+  }
+
+  await writeDb(incoming);
+  res.json({ ok: true, counts: {
+    cards: incoming.cards.length,
+    listings: incoming.listings.length,
+    sales: incoming.sales.length,
+    gradingCosts: incoming.gradingCosts.length,
+    cashAdjustments: incoming.cashAdjustments.length
+  }});
 });
 
 app.get('/api/backups', (req, res) => {

@@ -32,7 +32,7 @@
     <button class="tab" data-tab="inventory">Inventory</button>
     <button class="tab" data-tab="listings">Listings</button>
     <button class="tab" data-tab="sales">Sales</button>
-    <button class="tab" data-tab="import">Import eBay CSV</button>
+    <button class="tab" data-tab="import">Bulk Import</button>
     <button class="tab" data-tab="cash">Cash</button>
   </nav>
   <a href="/api/export" download class="export-link">Export data ⬇</a>
@@ -310,6 +310,17 @@
       <h3>Automatic backups</h3>
       <p class="hint">The site snapshots your data once a day automatically, kept for 30 days — this is a safety net for in-app mistakes, not a replacement for occasionally clicking Export data and saving that file somewhere off the site.</p>
       <div id="backups-list" class="activity-feed"></div>
+    </div>
+    <div class="panel">
+      <h3>Restore from backup</h3>
+      <p class="hint">If data ever gets wiped, upload an Export data file (or a downloaded backup from above) here to restore it. <strong>This replaces everything currently in the site</strong> — your current state gets snapshotted first as a safety net, but only use this when you mean to overwrite.</p>
+      <div class="import-controls">
+        <label class="file-btn">
+          Choose backup file
+          <input type="file" id="restore-file" accept=".json" />
+        </label>
+      </div>
+      <div id="restore-status" class="hint"></div>
     </div>
   </section>
 
