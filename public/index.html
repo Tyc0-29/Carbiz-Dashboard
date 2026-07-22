@@ -145,8 +145,8 @@
 
   <!-- INVENTORY -->
   <section class="view" id="view-inventory">
-    <div class="panel">
-      <h3>Add a purchase</h3>
+    <details class="panel">
+      <summary>Add a purchase</summary>
       <label class="checkbox-label">
         <input type="checkbox" id="already-owned" />
         Already owned this — didn't pay cash for it (gift, trade, had it before tracking)
@@ -160,9 +160,9 @@
         <input type="text" name="notes" placeholder="Notes" />
         <button type="submit" class="btn-primary">Add card</button>
       </form>
-    </div>
-    <div class="panel">
-      <h3>Add a lot purchase</h3>
+    </details>
+    <details class="panel">
+      <summary>Add a lot purchase</summary>
       <p class="hint">Bought several cards for one price? List each card, one per line, and the total you paid — cost splits evenly across them so every card still carries its own basis for accurate P&amp;L. You can hand-edit any individual card's cost afterward in Inventory if you want a different split.</p>
       <form id="form-lot" class="form-grid">
         <input type="date" name="purchaseDate" required />
@@ -172,9 +172,9 @@
         <textarea name="cardNames" class="lot-textarea" placeholder="One card per line, e.g.&#10;Paige Bueckers RC&#10;Shedeur Sanders RC&#10;George Lombard Jr RC" rows="4" required></textarea>
         <button type="submit" class="btn-primary">Add lot</button>
       </form>
-    </div>
-    <div class="panel">
-      <h3>Add a grading cost</h3>
+    </details>
+    <details class="panel">
+      <summary>Add a grading cost</summary>
       <p class="hint">Log what you paid to grade a card — it rolls into that card's cost basis automatically, so P&amp;L and on-hand value both account for it.</p>
       <form id="form-grading" class="form-grid">
         <select name="cardId" id="grading-card-select" required></select>
@@ -184,11 +184,11 @@
         <input type="date" name="date" required />
         <button type="submit" class="btn-primary">Add grading cost</button>
       </form>
-    </div>
-    <div class="panel">
-      <h3>Grading costs</h3>
+    </details>
+    <details class="panel">
+      <summary>Grading costs</summary>
       <div class="table-wrap"><table class="data-table" id="grading-table"></table></div>
-    </div>
+    </details>
     <div class="panel">
       <h3>Inventory</h3>
       <input type="text" id="filter-cards" class="filter-input" placeholder="Filter by player or sport..." />
@@ -198,8 +198,8 @@
 
   <!-- LISTINGS -->
   <section class="view" id="view-listings">
-    <div class="panel">
-      <h3>Add a listing</h3>
+    <details class="panel">
+      <summary>Add a listing</summary>
       <form id="form-listing" class="form-grid">
         <select name="cardId" id="listing-card-select" required></select>
         <select name="platform"><option>eBay</option><option>COMC</option><option>Whatnot</option><option>Facebook</option><option>Other</option></select>
@@ -213,7 +213,7 @@
         </div>
         <button type="submit" class="btn-primary">Add listing</button>
       </form>
-    </div>
+    </details>
     <div class="panel">
       <h3>Listings</h3>
       <input type="text" id="filter-listings" class="filter-input" placeholder="Filter by player or sport..." />
@@ -223,8 +223,8 @@
 
   <!-- SALES -->
   <section class="view" id="view-sales">
-    <div class="panel">
-      <h3>Record a sale</h3>
+    <details class="panel">
+      <summary>Record a sale</summary>
       <p class="hint">Fees = whatever eBay/the platform took out — final value fee, ad fee, and any shipping cost that came out of your pocket. Just enter the total difference between what it sold for and what actually landed in your account; net proceeds calculate automatically.</p>
       <form id="form-sale" class="form-grid">
         <select name="cardId" id="sale-card-select" required></select>
@@ -241,7 +241,7 @@
         </div>
         <button type="submit" class="btn-primary">Record sale</button>
       </form>
-    </div>
+    </details>
     <div class="panel">
       <h3>Sales</h3>
       <input type="text" id="filter-sales" class="filter-input" placeholder="Filter by player or sport..." />

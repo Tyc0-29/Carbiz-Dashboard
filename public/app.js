@@ -82,6 +82,7 @@ async function loadDashboard() {
     <tr><td>Total grading cost</td><td>${fmt$(d.totals.totalGradingCost)}</td></tr>
     <tr><td>Cost basis of sold cards</td><td>${fmt$(d.pnl.realizedCostBasis)}</td></tr>
     <tr><td>Listed inventory (at cost)</td><td>${fmt$(d.inventory.listedCostValue)}</td></tr>
+    <tr><td>Listed inventory (est. value)</td><td>${fmt$(d.inventory.listedEstimatedValue)} <span style="color:var(--text-dim);font-weight:400;">(${d.inventory.listedWithEstimate} of ${d.inventory.listedCount} priced)</span></td></tr>
     <tr><td>Active listings</td><td>${d.flags.activeListings}</td></tr>
     <tr><td>Cash deposits logged</td><td>${fmt$(d.cash.cashDeposits)}</td></tr>
   `;
@@ -174,11 +175,13 @@ function renderCardsTable() {
     const row = btn.closest('tr');
     const body = {};
     row.querySelectorAll('[data-edit-field]').forEach(el => { body[el.dataset.editField] = el.value; });
+    body.needsCostReview = false; // manually saving through the edit form counts as reviewing it
     await api(`/api/cards/${btn.dataset.saveCard}`, { method: 'PUT', body: JSON.stringify(body) });
     editingCardId = null;
     loadCards();
     loadListings();
     loadSales();
+    loadDashboard();
   }));
 
   $$('.est-value-input').forEach(input => input.addEventListener('change', async () => {

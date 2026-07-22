@@ -543,6 +543,10 @@ app.get('/api/dashboard', (req, res) => {
   const onHandWithEstimate = inHandCards.filter(c => c.estimatedValue !== null && c.estimatedValue !== undefined).length;
 
   const listedCostValue = listedCards.reduce((s, c) => s + costBasisForCard(db, c.id), 0);
+  const listedEstimatedValue = listedCards.reduce((s, c) => {
+    return s + (c.estimatedValue !== null && c.estimatedValue !== undefined ? num(c.estimatedValue) : costBasisForCard(db, c.id));
+  }, 0);
+  const listedWithEstimate = listedCards.filter(c => c.estimatedValue !== null && c.estimatedValue !== undefined).length;
   // most recent listing per listed card, to avoid double-counting relisted cards
   const latestListingByCard = {};
   db.listings.forEach(l => {
@@ -582,6 +586,8 @@ app.get('/api/dashboard', (req, res) => {
       onHandWithEstimate,
       listedCount: listedCards.length,
       listedCostValue: +listedCostValue.toFixed(2),
+      listedEstimatedValue: +listedEstimatedValue.toFixed(2),
+      listedWithEstimate,
       listedAskingTotal: +listedAskingTotal.toFixed(2)
     },
     pnl: {
