@@ -4,6 +4,13 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>TyCo's Cardbiz — Dashboard</title>
+<link rel="manifest" href="/manifest.json" />
+<link rel="icon" type="image/png" href="/favicon-32.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="theme-color" content="#14161A" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Cardbiz" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Teko:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -92,6 +99,18 @@
         <input type="text" name="source" placeholder="Source (eBay, show, trade...)" />
         <input type="text" name="notes" placeholder="Notes" />
         <button type="submit" class="btn-primary">Add card</button>
+      </form>
+    </div>
+    <div class="panel">
+      <h3>Add a lot purchase</h3>
+      <p class="hint">Bought several cards for one price? List each card, one per line, and the total you paid — cost splits evenly across them so every card still carries its own basis for accurate P&amp;L. You can hand-edit any individual card's cost afterward in Inventory if you want a different split.</p>
+      <form id="form-lot" class="form-grid">
+        <input type="date" name="purchaseDate" required />
+        <input type="number" step="0.01" name="totalCost" placeholder="Total lot cost ($)" required />
+        <input type="text" name="sport" placeholder="Sport (applies to all, optional)" />
+        <input type="text" name="source" placeholder="Source (eBay, show, trade...)" />
+        <textarea name="cardNames" class="lot-textarea" placeholder="One card per line, e.g.&#10;Paige Bueckers RC&#10;Shedeur Sanders RC&#10;George Lombard Jr RC" rows="4" required></textarea>
+        <button type="submit" class="btn-primary">Add lot</button>
       </form>
     </div>
     <div class="panel">
@@ -188,6 +207,11 @@
     <div class="panel">
       <h3>Adjustments</h3>
       <div class="table-wrap"><table class="data-table" id="cash-table"></table></div>
+    </div>
+    <div class="panel">
+      <h3>Automatic backups</h3>
+      <p class="hint">The site snapshots your data once a day automatically, kept for 30 days — this is a safety net for in-app mistakes, not a replacement for occasionally clicking Export data and saving that file somewhere off the site.</p>
+      <div id="backups-list" class="activity-feed"></div>
     </div>
   </section>
 

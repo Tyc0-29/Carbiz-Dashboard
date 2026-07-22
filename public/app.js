@@ -109,7 +109,7 @@ function renderCardsTable() {
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Status</th><th>Source</th><th></th></tr>
     ${rows.map(c => `
       <tr class="row-edge ${c.status}">
-        <td data-label="Card">${c.player}${c.needsCostReview ? ' ⚠' : ''}</td>
+        <td data-label="Card">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}</td>
         <td data-label="Sport">${c.sport || '—'}</td>
         <td data-label="Purchased">${c.purchaseDate}</td>
         <td data-label="Cost">${fmt$(c.cost)}</td>
@@ -194,6 +194,25 @@ $('#form-card').addEventListener('submit', async (e) => {
   loadCards();
 });
 
+// ---------- Lot purchase ----------
+$('#form-lot').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const body = Object.fromEntries(fd);
+  const cardNames = body.cardNames.split('\n').map(s => s.trim()).filter(Boolean);
+  if (cardNames.length < 2) {
+    alert('Enter at least 2 card names for a lot — for a single card, use "Add a purchase" instead.');
+    return;
+  }
+  const created = await api('/api/cards/lot', {
+    method: 'POST',
+    body: JSON.stringify({ ...body, cardNames })
+  });
+  alert(`Added ${created.length} cards from this lot — ${fmt$(body.totalCost / cardNames.length)} average each.`);
+  e.target.reset();
+  loadCards();
+});
+
 // ---------- Listings ----------
 async function loadListings() {
   listingsCache = await api('/api/listings');
@@ -219,6 +238,7 @@ function renderListingsTable() {
     }).join('') || `<tr><td>No matching listings.</td></tr>`}
   `;
   $$('[data-del-listing]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('Delete this listing?')) return;
     await api(`/api/listings/${btn.dataset.delListing}`, { method: 'DELETE' });
     loadListings();
   }));
@@ -285,6 +305,7 @@ function renderSalesTable() {
     }).join('') || `<tr><td>No matching sales.</td></tr>`}
   `;
   $$('[data-del-sale]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('Delete this sale? The card will go back to "in hand".')) return;
     await api(`/api/sales/${btn.dataset.delSale}`, { method: 'DELETE' });
     loadCards();
     loadSales();
@@ -339,9 +360,22 @@ async function loadCash() {
     </tr>`).join('')}
   `;
   $$('[data-del-cash]').forEach(btn => btn.addEventListener('click', async () => {
+    if (!confirm('Delete this cash adjustment?')) return;
     await api(`/api/cash-adjustments/${btn.dataset.delCash}`, { method: 'DELETE' });
     loadCash();
   }));
+}
+
+async function loadBackups() {
+  const files = await api('/api/backups');
+  $('#backups-list').innerHTML = files.length
+    ? files.map(f => `
+        <div class="activity-row">
+          <span>${f.replace('db-', '').replace('.json', '')}</span>
+          <a href="/api/backups/${f}" download class="link-btn">Download</a>
+        </div>
+      `).join('')
+    : '<div class="activity-row"><span>No backups yet — the first one is created shortly after the site starts running.</span></div>';
 }
 
 $('#form-cash').addEventListener('submit', async (e) => {
@@ -463,6 +497,6 @@ function renderMappingUI() {
   $('input[name="date"]').value = today;
 
   await loadCards();
-  await Promise.all([loadListings(), loadSales(), loadCash()]);
+  await Promise.all([loadListings(), loadSales(), loadCash(), loadBackups()]);
   await loadDashboard();
 })();

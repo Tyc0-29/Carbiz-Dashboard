@@ -323,6 +323,30 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   outline: 2px solid var(--red);
   outline-offset: 1px;
 }
+.lot-textarea {
+  grid-column: 1 / -1;
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 10px 12px;
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  background: var(--white);
+  color: var(--text-body);
+  resize: vertical;
+}
+.lot-textarea:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+.lot-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--navy);
+  background: #DCE6F5;
+  border-radius: 2px;
+  padding: 1px 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
 .btn-primary {
   grid-column: span 1;
   background: var(--red);

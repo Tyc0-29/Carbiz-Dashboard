@@ -1,0 +1,13 @@
+{
+  "name": "TyCo's Cardbiz",
+  "short_name": "Cardbiz",
+  "description": "Live P&L dashboard for the sports card business",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F4F2ED",
+  "theme_color": "#14161A",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

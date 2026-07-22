@@ -1,12 +1,43 @@
 const express = require('express');
 const path = require('path');
-const { readDb, writeDb, genId } = require('./store');
+const fs = require('fs');
+const { readDb, writeDb, genId, DB_PATH } = require('./store');
 
 const app = express();
 app.use(express.json({ limit: '5mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
+const BACKUP_DIR = path.join(__dirname, 'data', 'backups');
+const BACKUP_RETENTION_DAYS = 30;
+
+// ---------- automatic same-disk backups ----------
+// Snapshots db.json daily so an in-app mistake or bug can be recovered from,
+// independent of the manual Export button. This does NOT protect against the
+// whole disk being deleted — keep using Export data periodically for that.
+function runBackup() {
+  try {
+    readDb(); // ensures db.json exists even on a brand-new install
+    if (!fs.existsSync(DB_PATH)) return;
+    if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
+    const stamp = new Date().toISOString().slice(0, 10);
+    const dest = path.join(BACKUP_DIR, `db-${stamp}.json`);
+    if (!fs.existsSync(dest)) {
+      fs.copyFileSync(DB_PATH, dest);
+    }
+    // prune backups older than retention window
+    const cutoff = Date.now() - BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+    fs.readdirSync(BACKUP_DIR).forEach(f => {
+      const full = path.join(BACKUP_DIR, f);
+      const stat = fs.statSync(full);
+      if (stat.mtimeMs < cutoff) fs.unlinkSync(full);
+    });
+  } catch (err) {
+    console.error('Backup failed:', err.message);
+  }
+}
+runBackup();
+setInterval(runBackup, 24 * 60 * 60 * 1000);
 
 // ---------- helpers ----------
 function num(v) {
@@ -64,6 +95,44 @@ app.put('/api/cards/:id', async (req, res) => {
   if ('cost' in req.body) db.cards[idx].cost = num(req.body.cost);
   await writeDb(db);
   res.json(db.cards[idx]);
+});
+
+// Lot purchase: N cards for one total price, cost split evenly (remainder cents
+// distributed to the first few cards so the split always sums exactly to the total)
+app.post('/api/cards/lot', async (req, res) => {
+  const db = readDb();
+  const { purchaseDate, totalCost, sport, source, notes, cardNames } = req.body;
+  if (!Array.isArray(cardNames) || cardNames.length === 0) {
+    return res.status(400).json({ error: 'cardNames must be a non-empty array' });
+  }
+  const n = cardNames.length;
+  const totalCents = Math.round(num(totalCost) * 100);
+  const baseCents = Math.floor(totalCents / n);
+  const remainderCents = totalCents - baseCents * n;
+  const lotId = genId('lot');
+  const date = purchaseDate || new Date().toISOString().slice(0, 10);
+
+  const created = cardNames.map((name, i) => {
+    const costCents = baseCents + (i < remainderCents ? 1 : 0);
+    const card = {
+      id: genId('card'),
+      player: String(name).trim() || `Lot item ${i + 1}`,
+      sport: sport || '',
+      purchaseDate: date,
+      cost: +(costCents / 100).toFixed(2),
+      source: source ? `Lot: ${source}` : 'Lot purchase',
+      status: 'in_hand',
+      notes: notes || '',
+      lotId,
+      needsCostReview: false,
+      createdAt: new Date().toISOString()
+    };
+    db.cards.push(card);
+    return card;
+  });
+
+  await writeDb(db);
+  res.json(created);
 });
 
 app.delete('/api/cards/:id', async (req, res) => {
@@ -300,6 +369,24 @@ app.get('/api/export', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="cardbiz-backup-${stamp}.json"`);
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify(db, null, 2));
+});
+
+app.get('/api/backups', (req, res) => {
+  if (!fs.existsSync(BACKUP_DIR)) return res.json([]);
+  const files = fs.readdirSync(BACKUP_DIR)
+    .filter(f => f.endsWith('.json'))
+    .sort()
+    .reverse();
+  res.json(files);
+});
+
+app.get('/api/backups/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename); // prevent path traversal
+  const filePath = path.join(BACKUP_DIR, filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Backup not found' });
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  res.setHeader('Content-Type', 'application/json');
+  res.sendFile(filePath);
 });
 
 // ---------- DASHBOARD ----------
