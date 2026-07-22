@@ -493,7 +493,11 @@ const FIELD_GUESSES = {
   buyer: ['buyer username', 'buyer name', 'buyer'],
   orderId: ['order number', 'sales record number', 'order id'],
   sport: ['sport'],
-  source: ['source']
+  source: ['source'],
+  listPrice: ['list price', 'listing price', 'asking price', 'price'],
+  listDate: ['list date', 'listing date', 'date listed', 'date'],
+  platform: ['platform'],
+  ebayListingId: ['ebay listing id', 'listing id']
 };
 
 function guessColumn(headers, keys) {
@@ -563,6 +567,8 @@ function renderMappingUI(areaSelector, mode, headers, rows, onDone) {
   if (!headers.length) return;
   const fields = mode === 'sales'
     ? ['title', 'salePrice', 'fees', 'saleDate', 'buyer', 'orderId']
+    : mode === 'listings'
+    ? ['title', 'listPrice', 'listDate', 'platform', 'ebayListingId']
     : ['title', 'cost', 'purchaseDate', 'sport', 'source'];
 
   const area = $(areaSelector);
@@ -598,7 +604,7 @@ function renderMappingUI(areaSelector, mode, headers, rows, onDone) {
       Object.entries(mapping).forEach(([field, col]) => {
         if (!col) return;
         let val = row[col];
-        if (['salePrice', 'fees', 'cost'].includes(field)) {
+        if (['salePrice', 'fees', 'cost', 'listPrice'].includes(field)) {
           val = parseFloat(String(val).replace(/[^0-9.-]/g, '')) || 0;
         }
         out[field] = val;
@@ -607,7 +613,7 @@ function renderMappingUI(areaSelector, mode, headers, rows, onDone) {
     });
 
     const res = await api('/api/import', { method: 'POST', body: JSON.stringify({ mode, rows: outRows }) });
-    alert(`Imported ${res.created.cards} card(s)${res.created.sales ? ` and ${res.created.sales} sale(s)` : ''}.`);
+    alert(`Imported ${res.created.cards} card(s)${res.created.sales ? ` and ${res.created.sales} sale(s)` : ''}${res.created.listings ? ` and ${res.created.listings} listing(s)` : ''}.`);
     onDone();
     loadCards();
   });

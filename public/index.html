@@ -257,11 +257,13 @@
       <div class="import-controls">
         <a href="/templates/purchases-template.csv" download class="file-btn">Download purchases template</a>
         <a href="/templates/sales-template.csv" download class="file-btn">Download sales template</a>
+        <a href="/templates/listings-template.csv" download class="file-btn">Download listings template</a>
       </div>
       <div class="import-controls">
         <select id="bulk-mode">
           <option value="purchases">I'm importing: purchases</option>
           <option value="sales">I'm importing: sales</option>
+          <option value="listings">I'm importing: listings (creates the card + listing together)</option>
         </select>
       </div>
       <p class="hint" style="margin-top:14px;">Paste rows copied from your spreadsheet (including the header row):</p>
@@ -281,6 +283,7 @@
         <select id="import-mode">
           <option value="sales">This file is: sales / orders</option>
           <option value="purchases">This file is: purchases</option>
+          <option value="listings">This file is: listings</option>
         </select>
       </div>
       <div id="mapping-area"></div>

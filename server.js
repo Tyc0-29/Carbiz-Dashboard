@@ -312,7 +312,7 @@ app.post('/api/import', async (req, res) => {
   const { mode, rows } = req.body;
   if (!Array.isArray(rows)) return res.status(400).json({ error: 'rows must be an array' });
 
-  const created = { cards: 0, sales: 0 };
+  const created = { cards: 0, sales: 0, listings: 0 };
 
   if (mode === 'sales') {
     for (const row of rows) {
@@ -365,8 +365,38 @@ app.post('/api/import', async (req, res) => {
       db.cards.push(card);
       created.cards++;
     }
+  } else if (mode === 'listings') {
+    for (const row of rows) {
+      const card = {
+        id: genId('card'),
+        player: row.title || 'Imported listing',
+        sport: row.sport || '',
+        purchaseDate: row.listDate || new Date().toISOString().slice(0, 10),
+        cost: 0,
+        source: 'Bulk import (from listing)',
+        status: 'listed',
+        notes: 'Auto-created from bulk listings import — set real cost basis',
+        needsCostReview: true,
+        createdAt: new Date().toISOString()
+      };
+      db.cards.push(card);
+      created.cards++;
+
+      const listing = {
+        id: genId('list'),
+        cardId: card.id,
+        platform: row.platform || 'eBay',
+        listPrice: num(row.listPrice),
+        listDate: row.listDate || new Date().toISOString().slice(0, 10),
+        ebayListingId: row.ebayListingId || '',
+        status: 'active',
+        notes: 'Imported from bulk listings file'
+      };
+      db.listings.push(listing);
+      created.listings++;
+    }
   } else {
-    return res.status(400).json({ error: 'mode must be "sales" or "purchases"' });
+    return res.status(400).json({ error: 'mode must be "sales", "purchases", or "listings"' });
   }
 
   await writeDb(db);
