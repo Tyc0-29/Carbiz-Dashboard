@@ -304,6 +304,16 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   text-decoration: underline;
   padding: 0;
 }
+.preset-btn {
+  text-decoration: none;
+  border: 1px solid var(--red);
+  border-radius: 3px;
+  padding: 6px 12px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+.preset-btn:hover { background: var(--red); color: var(--white); }
 
 /* ---------- Forms ---------- */
 .form-grid {
@@ -386,6 +396,24 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   opacity: 0.75;
 }
 .comps-link:hover { opacity: 1; }
+.inline-edit, .inline-edit-input {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  padding: 4px 6px;
+  border: 1px solid var(--paper-line);
+  border-radius: 3px;
+  background: var(--white);
+  color: var(--text-body);
+  max-width: 130px;
+}
+.inline-edit:focus, .inline-edit-input:focus { outline: 2px solid var(--red); outline-offset: 1px; }
+select.inline-edit.status-chip {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  border: none;
+  padding: 3px 8px;
+}
 .btn-primary {
   grid-column: span 1;
   background: var(--red);

@@ -30,6 +30,7 @@ $$('.tab').forEach(tab => {
     tab.classList.add('active');
     $(`#view-${tab.dataset.tab}`).classList.add('active');
     if (tab.dataset.tab === 'dashboard') loadDashboard();
+    if (tab.dataset.tab === 'performance') loadPerformance();
   });
 });
 
@@ -56,6 +57,8 @@ async function loadDashboard() {
   $('#sb-inv-sub').textContent = `${d.inventory.onHandCount} cards, at cost`;
   $('#sb-est').textContent = fmt$(d.inventory.onHandEstimatedValue);
   $('#sb-est-sub').textContent = `${d.inventory.onHandWithEstimate} of ${d.inventory.onHandCount} priced`;
+  $('#sb-listed').textContent = fmt$(d.inventory.listedAskingTotal);
+  $('#sb-listed-sub').textContent = `${d.inventory.listedCount} card${d.inventory.listedCount === 1 ? '' : 's'} listed`;
   $('#sb-invested').textContent = fmt$(d.totals.totalPurchaseCost + d.totals.totalGradingCost);
 
   const flagBanner = $('#flag-banner');
@@ -77,6 +80,7 @@ async function loadDashboard() {
     <tr><td>Total purchase cost</td><td>${fmt$(d.totals.totalPurchaseCost)}</td></tr>
     <tr><td>Total grading cost</td><td>${fmt$(d.totals.totalGradingCost)}</td></tr>
     <tr><td>Cost basis of sold cards</td><td>${fmt$(d.pnl.realizedCostBasis)}</td></tr>
+    <tr><td>Listed inventory (at cost)</td><td>${fmt$(d.inventory.listedCostValue)}</td></tr>
     <tr><td>Active listings</td><td>${d.flags.activeListings}</td></tr>
     <tr><td>Cash deposits logged</td><td>${fmt$(d.cash.cashDeposits)}</td></tr>
   `;
@@ -254,14 +258,30 @@ function renderListingsTable() {
       const c = cardsCache.find(c => c.id === l.cardId);
       return `<tr>
         <td data-label="Card" class="cell-title">${c ? c.player : l.cardId}</td>
-        <td data-label="Platform">${l.platform}</td>
-        <td data-label="List price">${fmt$(l.listPrice)}</td>
-        <td data-label="Date">${l.listDate}</td>
-        <td data-label="Status"><span class="status-chip listed">${l.status}</span></td>
+        <td data-label="Platform">
+          <select class="inline-edit" data-listing-id="${l.id}" data-field="platform">
+            ${['eBay','COMC','Whatnot','Facebook','Other'].map(p => `<option value="${p}" ${p === l.platform ? 'selected' : ''}>${p}</option>`).join('')}
+          </select>
+        </td>
+        <td data-label="List price"><input type="number" step="0.01" class="inline-edit-input" data-listing-id="${l.id}" data-field="listPrice" value="${l.listPrice}" /></td>
+        <td data-label="Date"><input type="date" class="inline-edit-input" data-listing-id="${l.id}" data-field="listDate" value="${l.listDate}" /></td>
+        <td data-label="Status">
+          <select class="inline-edit status-chip listed" data-listing-id="${l.id}" data-field="status">
+            ${['active','ended','sold'].map(s => `<option value="${s}" ${s === l.status ? 'selected' : ''}>${s}</option>`).join('')}
+          </select>
+        </td>
         <td data-label=""><button class="link-btn" data-del-listing="${l.id}">Delete</button></td>
       </tr>`;
     }).join('') || `<tr><td>No matching listings.</td></tr>`}
   `;
+
+  $$('.inline-edit, .inline-edit-input').forEach(el => el.addEventListener('change', async () => {
+    await api(`/api/listings/${el.dataset.listingId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ [el.dataset.field]: el.value })
+    });
+  }));
+
   $$('[data-del-listing]').forEach(btn => btn.addEventListener('click', async () => {
     if (!confirm('Delete this listing?')) return;
     await api(`/api/listings/${btn.dataset.delListing}`, { method: 'DELETE' });
@@ -541,6 +561,81 @@ function renderMappingUI(areaSelector, mode, headers, rows, onDone) {
     alert(`Imported ${res.created.cards} card(s)${res.created.sales ? ` and ${res.created.sales} sale(s)` : ''}.`);
     onDone();
     loadCards();
+  });
+}
+
+// ---------- Performance ----------
+let perfChart = null;
+
+function isoDaysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+$$('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const preset = btn.dataset.preset;
+    const today = new Date().toISOString().slice(0, 10);
+    if (preset === 'all') {
+      $('#perf-start').value = '';
+      $('#perf-end').value = '';
+    } else if (preset === 'ytd') {
+      $('#perf-start').value = `${new Date().getFullYear()}-01-01`;
+      $('#perf-end').value = today;
+    } else {
+      $('#perf-start').value = isoDaysAgo(Number(preset));
+      $('#perf-end').value = today;
+    }
+    loadPerformance();
+  });
+});
+
+$('#perf-apply').addEventListener('click', loadPerformance);
+
+async function loadPerformance() {
+  const start = $('#perf-start').value;
+  const end = $('#perf-end').value;
+  const params = new URLSearchParams();
+  if (start) params.set('start', start);
+  if (end) params.set('end', end);
+
+  const d = await api(`/api/performance?${params.toString()}`);
+
+  const pnlEl = $('#perf-pnl');
+  pnlEl.textContent = fmt$(d.sales.realizedPnL);
+  pnlEl.className = 'score-value ' + (d.sales.realizedPnL >= 0 ? 'positive' : 'negative');
+  $('#perf-pnl-sub').textContent = `margin ${d.sales.avgMarginPct}%`;
+
+  $('#perf-revenue').textContent = fmt$(d.sales.totalRevenue);
+  $('#perf-revenue-sub').textContent = `${d.sales.count} sale${d.sales.count === 1 ? '' : 's'}`;
+  $('#perf-avg').textContent = fmt$(d.sales.avgSalePrice);
+  $('#perf-spent').textContent = fmt$(d.purchases.totalCost);
+  $('#perf-spent-sub').textContent = `${d.purchases.count} card${d.purchases.count === 1 ? '' : 's'} bought`;
+
+  const ctx = $('#perf-chart').getContext('2d');
+  const labels = d.daily.map(p => p.date);
+  const values = d.daily.map(p => p.netProceeds);
+
+  if (perfChart) perfChart.destroy();
+  perfChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Net proceeds',
+        data: values,
+        backgroundColor: '#B01B2E'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { ticks: { callback: (v) => '$' + v } }
+      }
+    }
   });
 }
 

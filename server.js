@@ -396,6 +396,58 @@ app.get('/api/backups/:filename', (req, res) => {
   res.sendFile(filePath);
 });
 
+// ---------- PERFORMANCE (date-range filterable) ----------
+app.get('/api/performance', (req, res) => {
+  const db = readDb();
+  const { start, end } = req.query;
+  const inRange = (dateStr) => {
+    if (!dateStr) return false;
+    if (start && dateStr < start) return false;
+    if (end && dateStr > end) return false;
+    return true;
+  };
+
+  const purchasesInRange = db.cards.filter(c => inRange(c.purchaseDate));
+  const salesInRange = db.sales.filter(s => inRange(s.saleDate));
+
+  const totalCost = purchasesInRange.reduce((s, c) => s + num(c.cost), 0);
+  const totalRevenue = salesInRange.reduce((s, s2) => s + num(s2.salePrice) + num(s2.shippingCharged), 0);
+  const totalFees = salesInRange.reduce((s, s2) => s + num(s2.fees), 0);
+  const totalNetProceeds = salesInRange.reduce((s, s2) => s + num(s2.netProceeds), 0);
+  const costBasisSold = salesInRange.reduce((s, s2) => s + costBasisForCard(db, s2.cardId), 0);
+  const realizedPnL = +(totalNetProceeds - costBasisSold).toFixed(2);
+  const avgSalePrice = salesInRange.length ? totalRevenue / salesInRange.length : 0;
+  const avgMarginPct = totalNetProceeds > 0 ? (realizedPnL / totalNetProceeds) * 100 : 0;
+
+  // per-day net proceeds, for a simple chart — one point per date that had a sale
+  const byDate = {};
+  salesInRange.forEach(s => {
+    byDate[s.saleDate] = (byDate[s.saleDate] || 0) + num(s.netProceeds);
+  });
+  const daily = Object.entries(byDate)
+    .map(([date, netProceeds]) => ({ date, netProceeds: +netProceeds.toFixed(2) }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  res.json({
+    range: { start: start || null, end: end || null },
+    purchases: {
+      count: purchasesInRange.length,
+      totalCost: +totalCost.toFixed(2)
+    },
+    sales: {
+      count: salesInRange.length,
+      totalRevenue: +totalRevenue.toFixed(2),
+      totalFees: +totalFees.toFixed(2),
+      totalNetProceeds: +totalNetProceeds.toFixed(2),
+      costBasisSold: +costBasisSold.toFixed(2),
+      realizedPnL,
+      avgSalePrice: +avgSalePrice.toFixed(2),
+      avgMarginPct: +avgMarginPct.toFixed(1)
+    },
+    daily
+  });
+});
+
 // ---------- DASHBOARD ----------
 app.get('/api/dashboard', (req, res) => {
   const db = readDb();
@@ -407,13 +459,28 @@ app.get('/api/dashboard', (req, res) => {
   const totalShippingPaid = db.sales.reduce((s, s2) => s + num(s2.shippingPaid), 0);
   const totalNetProceeds = db.sales.reduce((s, s2) => s + num(s2.netProceeds), 0);
 
-  const soldCardIds = new Set(db.sales.map(s => s.cardId));
-  const onHandCards = db.cards.filter(c => !soldCardIds.has(c.id));
-  const onHandCostValue = onHandCards.reduce((s, c) => s + costBasisForCard(db, c.id), 0);
-  const onHandEstimatedValue = onHandCards.reduce((s, c) => {
+  const inHandCards = db.cards.filter(c => c.status === 'in_hand');
+  const listedCards = db.cards.filter(c => c.status === 'listed');
+
+  const onHandCostValue = inHandCards.reduce((s, c) => s + costBasisForCard(db, c.id), 0);
+  const onHandEstimatedValue = inHandCards.reduce((s, c) => {
     return s + (c.estimatedValue !== null && c.estimatedValue !== undefined ? num(c.estimatedValue) : costBasisForCard(db, c.id));
   }, 0);
-  const onHandWithEstimate = onHandCards.filter(c => c.estimatedValue !== null && c.estimatedValue !== undefined).length;
+  const onHandWithEstimate = inHandCards.filter(c => c.estimatedValue !== null && c.estimatedValue !== undefined).length;
+
+  const listedCostValue = listedCards.reduce((s, c) => s + costBasisForCard(db, c.id), 0);
+  // most recent listing per listed card, to avoid double-counting relisted cards
+  const latestListingByCard = {};
+  db.listings.forEach(l => {
+    const existing = latestListingByCard[l.cardId];
+    if (!existing || new Date(l.listDate) >= new Date(existing.listDate)) {
+      latestListingByCard[l.cardId] = l;
+    }
+  });
+  const listedAskingTotal = listedCards.reduce((s, c) => {
+    const listing = latestListingByCard[c.id];
+    return s + (listing ? num(listing.listPrice) : 0);
+  }, 0);
 
   const realizedCostBasis = db.sales.reduce((s, s2) => s + costBasisForCard(db, s2.cardId), 0);
   const realizedPnL = +(totalNetProceeds - realizedCostBasis).toFixed(2);
@@ -435,10 +502,13 @@ app.get('/api/dashboard', (req, res) => {
       totalNetProceeds: +totalNetProceeds.toFixed(2)
     },
     inventory: {
-      onHandCount: onHandCards.length,
+      onHandCount: inHandCards.length,
       onHandCostValue: +onHandCostValue.toFixed(2),
       onHandEstimatedValue: +onHandEstimatedValue.toFixed(2),
-      onHandWithEstimate
+      onHandWithEstimate,
+      listedCount: listedCards.length,
+      listedCostValue: +listedCostValue.toFixed(2),
+      listedAskingTotal: +listedAskingTotal.toFixed(2)
     },
     pnl: {
       realizedCostBasis: +realizedCostBasis.toFixed(2),

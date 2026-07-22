@@ -28,6 +28,7 @@
   </div>
   <nav class="tabs" id="tabs">
     <button class="tab active" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="performance">Performance</button>
     <button class="tab" data-tab="inventory">Inventory</button>
     <button class="tab" data-tab="listings">Listings</button>
     <button class="tab" data-tab="sales">Sales</button>
@@ -58,9 +59,14 @@
         <div class="score-sub" id="sb-inv-sub">0 cards, at cost</div>
       </div>
       <div class="score-cell">
-        <div class="score-label">Est. market value</div>
+        <div class="score-label">Est. on-hand market value</div>
         <div class="score-value" id="sb-est">$0</div>
         <div class="score-sub" id="sb-est-sub">0 of 0 priced</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Listed total ($ asking)</div>
+        <div class="score-value" id="sb-listed">$0</div>
+        <div class="score-sub" id="sb-listed-sub">0 cards listed</div>
       </div>
       <div class="score-cell">
         <div class="score-label">Total invested</div>
@@ -85,6 +91,55 @@
     <div class="panel">
       <h3>Recent activity</h3>
       <div id="activity-feed" class="activity-feed"></div>
+    </div>
+  </section>
+
+  <!-- PERFORMANCE -->
+  <section class="view" id="view-performance">
+    <div class="panel">
+      <h3>Date range</h3>
+      <div class="import-controls">
+        <button class="link-btn preset-btn" data-preset="7">Last 7 days</button>
+        <button class="link-btn preset-btn" data-preset="30">Last 30 days</button>
+        <button class="link-btn preset-btn" data-preset="90">Last 90 days</button>
+        <button class="link-btn preset-btn" data-preset="ytd">Year to date</button>
+        <button class="link-btn preset-btn" data-preset="all">All time</button>
+      </div>
+      <div class="form-grid" style="margin-top:12px;">
+        <input type="date" id="perf-start" />
+        <input type="date" id="perf-end" />
+        <button id="perf-apply" class="btn-primary">Apply</button>
+      </div>
+    </div>
+
+    <div class="scoreboard" id="perf-scoreboard">
+      <div class="score-cell">
+        <div class="score-label">Realized P&amp;L</div>
+        <div class="score-value" id="perf-pnl">$0</div>
+        <div class="score-sub" id="perf-pnl-sub">margin —</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Revenue</div>
+        <div class="score-value" id="perf-revenue">$0</div>
+        <div class="score-sub" id="perf-revenue-sub">0 sales</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Avg. sale price</div>
+        <div class="score-value" id="perf-avg">$0</div>
+        <div class="score-sub">per card sold</div>
+      </div>
+      <div class="score-cell">
+        <div class="score-label">Spent on purchases</div>
+        <div class="score-value" id="perf-spent">$0</div>
+        <div class="score-sub" id="perf-spent-sub">0 cards bought</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Net proceeds by day</h3>
+      <div style="position:relative; height:260px;">
+        <canvas id="perf-chart"></canvas>
+      </div>
     </div>
   </section>
 
@@ -242,6 +297,7 @@
 </main>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
