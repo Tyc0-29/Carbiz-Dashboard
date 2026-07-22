@@ -356,6 +356,18 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   margin-left: 5px;
   vertical-align: middle;
 }
+.owned-tag {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--green);
+  background: #DCEFE1;
+  border-radius: 2px;
+  padding: 1px 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
 .btn-primary {
   grid-column: span 1;
   background: var(--red);

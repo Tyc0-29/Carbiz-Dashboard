@@ -109,16 +109,24 @@ function renderCardsTable() {
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Status</th><th>Source</th><th></th></tr>
     ${rows.map(c => `
       <tr class="row-edge ${c.status}">
-        <td data-label="Card" class="cell-title">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}</td>
+        <td data-label="Card" class="cell-title">${c.player}${c.needsCostReview ? ' ⚠' : ''}${c.alreadyOwned ? ' <span class="owned-tag">OWNED</span>' : ''}${c.lotId ? ' <span class="lot-tag">LOT</span>' : ''}</td>
         <td data-label="Sport">${c.sport || '—'}</td>
         <td data-label="Purchased">${c.purchaseDate}</td>
         <td data-label="Cost">${fmt$(c.cost)}</td>
         <td data-label="Status"><span class="status-chip ${c.status}">${c.status.replace('_',' ')}</span></td>
         <td data-label="Source">${c.source || '—'}</td>
-        <td data-label=""><button class="link-btn" data-del-card="${c.id}">Delete</button></td>
+        <td data-label=""><button class="link-btn" data-del-card="${c.id}">Delete</button>${c.needsCostReview ? ` <button class="link-btn" data-clear-flag="${c.id}">Mark already owned</button>` : ''}</td>
       </tr>
     `).join('') || `<tr><td>No matching cards.</td></tr>`}
   `;
+
+  $$('[data-clear-flag]').forEach(btn => btn.addEventListener('click', async () => {
+    await api(`/api/cards/${btn.dataset.clearFlag}`, {
+      method: 'PUT',
+      body: JSON.stringify({ needsCostReview: false, alreadyOwned: true })
+    });
+    loadCards();
+  }));
 
   $$('[data-del-card]').forEach(btn => btn.addEventListener('click', async () => {
     if (!confirm('Delete this card and its related listings/sales?')) return;
@@ -183,7 +191,7 @@ $('#form-card').addEventListener('submit', async (e) => {
   const body = Object.fromEntries(fd);
   if (alreadyOwnedCheckbox.checked) {
     body.cost = 0;
-    body.needsCostReview = true;
+    body.alreadyOwned = true;
     if (!body.source) body.source = 'Already owned';
   }
   await api('/api/cards', { method: 'POST', body: JSON.stringify(body) });

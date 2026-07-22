@@ -80,6 +80,7 @@ app.post('/api/cards', async (req, res) => {
     status: req.body.status || 'in_hand', // in_hand | listed | sold
     notes: req.body.notes || '',
     needsCostReview: !!req.body.needsCostReview,
+    alreadyOwned: !!req.body.alreadyOwned,
     createdAt: new Date().toISOString()
   };
   db.cards.push(card);
