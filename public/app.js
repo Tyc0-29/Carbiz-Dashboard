@@ -551,6 +551,7 @@ async function loadCash() {
     if (!confirm('Delete this cash adjustment?')) return;
     await api(`/api/cash-adjustments/${btn.dataset.delCash}`, { method: 'DELETE' });
     loadCash();
+    loadDashboard();
   }));
 }
 
@@ -605,6 +606,7 @@ $('#form-cash').addEventListener('submit', async (e) => {
   await api('/api/cash-adjustments', { method: 'POST', body: JSON.stringify(Object.fromEntries(fd)) });
   e.target.reset();
   loadCash();
+  loadDashboard();
 });
 
 // ---------- CSV Import ----------
