@@ -1,20 +1,22 @@
 :root {
-  --ink: #14161A;
-  --ink-soft: #2A2D33;
+  --ink: #14342B;            /* deep forest — headers, strong text */
+  --ink-soft: #1F4A3A;
   --white: #FFFFFF;
-  --paper: #F4F2ED;
-  --paper-line: #E4E0D6;
-  --red: #B01B2E;
-  --red-dark: #7E1220;
-  --red-wash: #FBEAEC;
+  --paper: #F3EFE5;          /* cream */
+  --paper-line: #E3DCC9;
+  --red: #1E5C43;            /* brand forest — primary actions (var name kept for safety) */
+  --red-dark: #164534;
+  --red-wash: #F5EAD2;       /* warm gold wash for notices */
+  --gold: #C6952F;
+  --gold-soft: #D6A54A;
   --navy: #1C2B4A;
   --green: #1F7A43;
   --loss: #B0142E;
-  --text-dim: #6B6B66;
-  --text-body: #201F1B;
+  --text-dim: #6F6B5E;
+  --text-body: #22201A;
 
-  --font-display: 'Teko', sans-serif;
-  --font-body: 'Inter', sans-serif;
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Outfit', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -36,7 +38,7 @@ body {
   justify-content: space-between;
   padding: 16px 32px;
   background: var(--ink);
-  border-bottom: 4px solid var(--red);
+  border-bottom: 4px solid var(--gold);
   flex-wrap: wrap;
   gap: 16px;
 }
@@ -47,38 +49,27 @@ body {
   gap: 12px;
 }
 
-.cert-mark {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  background: var(--white);
-  border: 2px solid var(--ink);
-  border-radius: 2px;
-  padding: 5px 14px 7px;
-  line-height: 1.05;
+.brand-lockup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
-.cert-mark-top {
-  font-family: var(--font-body);
-  font-size: 7.5px;
-  font-weight: 800;
-  letter-spacing: 1.6px;
-  color: var(--red);
-  margin-bottom: 2px;
-}
-.cert-mark-main {
+.brand-fan { display: block; }
+.brand-text { line-height: 1; }
+.brand-name {
   font-family: var(--font-display);
-  font-size: 27px;
-  font-weight: 600;
-  color: var(--ink);
-  letter-spacing: 0.3px;
+  font-size: 30px;
+  font-weight: 700;
+  color: #F3EFE5;
+  letter-spacing: 0.2px;
 }
-.cert-mark-sub {
+.brand-sub {
   font-family: var(--font-body);
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 3.5px;
-  color: var(--ink);
-  margin-top: -3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: var(--gold-soft);
+  margin-top: 3px;
 }
 
 .tabs {
@@ -152,8 +143,8 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
 }
 .score-value {
   font-family: var(--font-display);
-  font-size: 48px;
-  font-weight: 600;
+  font-size: 44px;
+  font-weight: 800;
   line-height: 1;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
@@ -169,8 +160,8 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
 
 .flag-banner {
   background: var(--red-wash);
-  border: 1px solid var(--red);
-  color: var(--red-dark);
+  border: 1px solid var(--gold);
+  color: #7A5A14;
   padding: 12px 16px;
   border-radius: 3px;
   font-size: 13px;
@@ -269,8 +260,8 @@ details.panel:not([open]) { padding-bottom: 22px; }
   border: none;
   background: transparent;
   font-family: var(--font-display);
-  font-size: 44px;
-  font-weight: 600;
+  font-size: 40px;
+  font-weight: 800;
   color: var(--ink);
   padding: 12px 16px 2px;
   font-variant-numeric: tabular-nums;

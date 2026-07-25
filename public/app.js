@@ -789,7 +789,7 @@ async function loadPerformance() {
       datasets: [{
         label: 'Net proceeds',
         data: values,
-        backgroundColor: '#B01B2E'
+        backgroundColor: '#C6952F'
       }]
     },
     options: {
