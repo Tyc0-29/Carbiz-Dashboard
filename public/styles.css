@@ -255,6 +255,21 @@ details.panel:not([open]) { padding-bottom: 22px; }
 .status-filter-group input { accent-color: var(--red); cursor: pointer; }
 
 .score-cell-editable { position: relative; }
+.score-cell-highlight {
+  border: 2px solid var(--gold);
+  background: linear-gradient(180deg, rgba(198,149,47,0.08), transparent);
+}
+.score-cash-wrap {
+  display: flex;
+  align-items: baseline;
+}
+.score-cash-prefix {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 800;
+  color: var(--ink);
+  padding-left: 16px;
+}
 .score-value-input {
   width: 100%;
   border: none;
@@ -263,7 +278,7 @@ details.panel:not([open]) { padding-bottom: 22px; }
   font-size: 40px;
   font-weight: 800;
   color: var(--ink);
-  padding: 12px 16px 2px;
+  padding: 12px 4px 2px 4px;
   font-variant-numeric: tabular-nums;
 }
 .score-value-input:focus { outline: none; background: var(--paper); }
@@ -438,6 +453,14 @@ details.panel:not([open]) { padding-bottom: 22px; }
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.searchable-select {
+  display: block;
+  min-width: 0;
+}
+.card-search-input {
+  width: 100%;
+  box-sizing: border-box;
 }
 .form-grid select, #import-mode {
   -webkit-appearance: none;

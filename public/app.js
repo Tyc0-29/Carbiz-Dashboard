@@ -120,7 +120,13 @@ let editingCardId = null;
 function renderCardsTable() {
   const query = $('#filter-cards')?.value || '';
   const checkedStatuses = $$('.status-filter').filter(cb => cb.checked).map(cb => cb.value);
-  const rows = cardsCache.filter(c => matchesFilter(c, query) && checkedStatuses.includes(c.status));
+  const rows = cardsCache
+    .filter(c => matchesFilter(c, query) && checkedStatuses.includes(c.status))
+    .sort((a, b) => {
+      const av = a.estimatedValue !== null && a.estimatedValue !== undefined ? a.estimatedValue : a.cost;
+      const bv = b.estimatedValue !== null && b.estimatedValue !== undefined ? b.estimatedValue : b.cost;
+      return bv - av; // highest estimated value first
+    });
 
   $('#cards-table').innerHTML = `
     <tr><th>Card</th><th>Sport</th><th>Purchased</th><th>Cost</th><th>Est. Value</th><th>Status</th><th>Source</th><th></th></tr>
@@ -227,40 +233,66 @@ function gradingTotalForCard(cardId) {
   return gradingCache.filter(g => g.cardId === cardId).reduce((s, g) => s + Number(g.cost || 0), 0);
 }
 
+// Wires a text input + <datalist> + hidden input into a searchable "select".
+// options: array of {id, label}. onResolved(id) fires whenever the typed
+// text exactly matches a known label (i.e., a real selection was made).
+function setupSearchableSelect(prefix, options, onResolved) {
+  const input = $(`#${prefix}-input`);
+  const list = $(`#${prefix}-list`);
+  const hidden = $(`#${prefix}-select`);
+  if (!input || !list || !hidden) return;
+
+  const byLabel = new Map(options.map(o => [o.label, o.id]));
+  list.innerHTML = options.map(o => `<option value="${o.label.replace(/"/g, '&quot;')}"></option>`).join('');
+
+  // preserve whatever was typed/selected before this repopulation if it's still valid
+  const prevLabel = input.value;
+  if (!byLabel.has(prevLabel)) {
+    input.value = '';
+    hidden.value = '';
+  }
+
+  const resolve = () => {
+    const id = byLabel.get(input.value) || '';
+    hidden.value = id;
+    if (onResolved) onResolved(id);
+  };
+  input.oninput = resolve;
+  input.onchange = resolve;
+}
+
+// Confirms the searchable select actually resolved to a real card (not just
+// typed text that didn't match anything). Returns false + alerts if invalid.
+function requireValidCardSelection(prefix) {
+  const hidden = $(`#${prefix}-select`);
+  if (!hidden.value) {
+    alert('Please pick a card from the search results (or clear the box and try a different search).');
+    return false;
+  }
+  return true;
+}
+
 function populateCardDropdowns() {
   // Listing dropdown: cards not already listed/sold, with quick-add as a fallback option at the end
   const listableCards = cardsCache.filter(c => c.status === 'in_hand');
-  const listingSelect = $('#listing-card-select');
-  const listableOptions = listableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
-  listingSelect.innerHTML = listableOptions + `<option value="__new__">+ New card (not in inventory yet)</option>`;
+  const listableOptions = listableCards.map(c => ({ id: c.id, label: cardLabel(c) }));
+  listableOptions.push({ id: '__new__', label: '+ New card (not in inventory yet)' });
+  setupSearchableSelect('listing-card', listableOptions, (id) => {
+    $('#quick-add-listing-card').classList.toggle('hidden', id !== '__new__');
+  });
 
   // Sale dropdown: any card not already sold, with quick-add as a fallback option at the end
   const sellableCards = cardsCache.filter(c => c.status !== 'sold');
-  const saleSelect = $('#sale-card-select');
-  const sellableOptions = sellableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
-  saleSelect.innerHTML = sellableOptions + `<option value="__new__">+ New card (not in inventory yet)</option>`;
-
-  toggleQuickAdd(saleSelect, $('#quick-add-card'));
-  toggleQuickAdd(listingSelect, $('#quick-add-listing-card'));
+  const sellableOptions = sellableCards.map(c => ({ id: c.id, label: cardLabel(c) }));
+  sellableOptions.push({ id: '__new__', label: '+ New card (not in inventory yet)' });
+  setupSearchableSelect('sale-card', sellableOptions, (id) => {
+    $('#quick-add-card').classList.toggle('hidden', id !== '__new__');
+  });
 
   // Grading dropdown: any non-sold card
   const gradableCards = cardsCache.filter(c => c.status !== 'sold');
-  const gradingSelect = $('#grading-card-select');
-  if (gradingSelect) {
-    gradingSelect.innerHTML = gradableCards.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('');
-  }
+  setupSearchableSelect('grading-card', gradableCards.map(c => ({ id: c.id, label: cardLabel(c) })));
 }
-
-function toggleQuickAdd(select, quickAddEl) {
-  if (select.value === '__new__') {
-    quickAddEl.classList.remove('hidden');
-  } else {
-    quickAddEl.classList.add('hidden');
-  }
-}
-
-$('#sale-card-select').addEventListener('change', (e) => toggleQuickAdd(e.target, $('#quick-add-card')));
-$('#listing-card-select').addEventListener('change', (e) => toggleQuickAdd(e.target, $('#quick-add-listing-card')));
 
 // ---------- Already-owned checkbox ----------
 const alreadyOwnedCheckbox = $('#already-owned');
@@ -344,6 +376,7 @@ function renderGradingTable() {
 
 $('#form-grading').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!requireValidCardSelection('grading-card')) return;
   const fd = new FormData(e.target);
   await api('/api/grading', { method: 'POST', body: JSON.stringify(Object.fromEntries(fd)) });
   e.target.reset();
@@ -358,7 +391,9 @@ async function loadListings() {
 
 function renderListingsTable() {
   const query = $('#filter-listings')?.value || '';
-  const rows = listingsCache.filter(l => matchesFilter(cardsCache.find(c => c.id === l.cardId), query));
+  const rows = listingsCache
+    .filter(l => matchesFilter(cardsCache.find(c => c.id === l.cardId), query))
+    .sort((a, b) => Number(b.listPrice || 0) - Number(a.listPrice || 0)); // highest asking price first
 
   $('#listings-table').innerHTML = `
     <tr><th>Card</th><th>Platform</th><th>List price</th><th>Date</th><th>Status</th><th></th></tr>
@@ -401,6 +436,7 @@ $('#filter-listings').addEventListener('input', renderListingsTable);
 
 $('#form-listing').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!requireValidCardSelection('listing-card')) return;
   const fd = new FormData(e.target);
   const body = Object.fromEntries(fd);
 
@@ -442,7 +478,9 @@ let editingSaleId = null;
 
 function renderSalesTable() {
   const query = $('#filter-sales')?.value || '';
-  const rows = salesCache.filter(s => matchesFilter(cardsCache.find(c => c.id === s.cardId), query));
+  const rows = salesCache
+    .filter(s => matchesFilter(cardsCache.find(c => c.id === s.cardId), query))
+    .sort((a, b) => (b.saleDate || '').localeCompare(a.saleDate || '')); // most recent sale first
 
   $('#sales-table').innerHTML = `
     <tr><th>Card</th><th>Platform</th><th>Sale price</th><th>Fees</th><th>Net</th><th>Date</th><th></th></tr>
@@ -512,6 +550,7 @@ $('#filter-sales').addEventListener('input', renderSalesTable);
 
 $('#form-sale').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (!requireValidCardSelection('sale-card')) return;
   const fd = new FormData(e.target);
   const body = Object.fromEntries(fd);
 
@@ -813,12 +852,10 @@ async function loadDisplayCase() {
 }
 
 function populateDisplayDropdown() {
-  const select = $('#display-card-select');
-  if (!select) return;
+  if (!$('#display-card-input')) return;
   const eligible = cardsCache.filter(c => c.status !== 'sold' && !c.displayCase);
-  select.innerHTML = eligible.length
-    ? eligible.map(c => `<option value="${c.id}">${cardLabel(c)}</option>`).join('')
-    : `<option value="">No eligible cards (already in case, or all sold)</option>`;
+  setupSearchableSelect('display-card', eligible.map(c => ({ id: c.id, label: cardLabel(c) })));
+  $('#display-card-input').placeholder = eligible.length ? 'Search cards...' : 'No eligible cards (already in case, or all sold)';
 }
 
 function renderDisplayCase() {
