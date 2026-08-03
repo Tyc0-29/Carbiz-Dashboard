@@ -12,7 +12,14 @@ async function api(path, opts = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...opts
   });
-  if (!res.ok) throw new Error(`API error ${res.status} on ${path}`);
+  if (!res.ok) {
+    let message = `API error ${res.status} on ${path}`;
+    try {
+      const body = await res.json();
+      if (body && body.error) message = body.error;
+    } catch {}
+    throw new Error(message);
+  }
   return res.json();
 }
 
@@ -938,6 +945,60 @@ $('#form-display').addEventListener('submit', async (e) => {
   }
   e.target.reset();
   loadCards();
+});
+
+// ---------- Card scanning (AI identification) ----------
+const SCAN_TARGETS = {
+  purchase: { player: 'card-player-field', sport: 'card-sport-field' },
+  listing: { player: 'new-listing-card-player', sport: 'new-listing-card-sport' },
+  sale: { player: 'new-card-player', sport: 'new-card-sport' }
+};
+
+$$('.scan-input').forEach(input => {
+  input.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const target = input.dataset.scanTarget;
+    const resultEl = document.querySelector(`[data-scan-result="${target}"]`);
+    resultEl.classList.remove('hidden');
+    resultEl.innerHTML = `<span class="scan-status">Reading card...</span>`;
+
+    try {
+      const dataUri = await resizeImageFile(file);
+      const card = await api('/api/scan-card', { method: 'POST', body: JSON.stringify({ imageBase64: dataUri }) });
+
+      const fields = SCAN_TARGETS[target];
+      if (fields) {
+        if (card.player) $('#' + fields.player).value = card.player;
+        if (card.sport) $('#' + fields.sport).value = card.sport;
+      }
+
+      const titleParts = [card.year, card.player].filter(Boolean);
+      const title = titleParts.length ? titleParts.join(' ') : 'Could not confidently identify this card';
+      const confColor = card.confidence === 'high' ? 'var(--green)' : card.confidence === 'medium' ? 'var(--gold)' : '#B04040';
+      const details = [card.brand, card.parallel, card.cardNumber].filter(Boolean).join(' · ');
+
+      let compsLinkHtml = '';
+      if (card.player || card.year || card.brand) {
+        const searchTerms = [card.year, card.brand, card.player, card.parallel, card.cardNumber].filter(Boolean).join(' ');
+        const url = `https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(searchTerms)}&LH_Sold=1&LH_Complete=1`;
+        compsLinkHtml = `<a href="${url}" target="_blank" rel="noopener" class="scan-comps-link">🔍 Check sold comps</a>`;
+      }
+
+      resultEl.innerHTML = `
+        <div class="scan-result-title">${title}</div>
+        ${details ? `<div class="scan-result-detail">${details}</div>` : ''}
+        <div class="scan-result-confidence" style="color:${confColor};">${card.confidence || 'unknown'} confidence</div>
+        ${card.notes ? `<div class="scan-result-notes">${card.notes}</div>` : ''}
+        ${compsLinkHtml}
+        <div class="scan-result-hint">Fields filled in below — double-check before saving.</div>
+      `;
+    } catch (err) {
+      resultEl.innerHTML = `<span class="scan-status scan-status-error">${err.message || 'Could not identify that card. Try a clearer photo.'}</span>`;
+    } finally {
+      input.value = '';
+    }
+  });
 });
 
 // ---------- Init ----------

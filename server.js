@@ -349,6 +349,85 @@ app.post('/api/cards/:id/photo', async (req, res) => {
   res.json({ photoUrl: card.photoUrl });
 });
 
+// ---------- CARD SCANNING (AI identification) ----------
+// Sends a card photo to Claude, gets back player/year/brand/parallel/etc.
+// Requires ANTHROPIC_API_KEY to be set in the environment — without it this
+// returns a clear "not configured" error rather than failing silently.
+app.post('/api/scan-card', async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(400).json({
+      error: 'Card scanning isn\'t set up yet. Add an ANTHROPIC_API_KEY environment variable in Render → your service → Environment, then redeploy.'
+    });
+  }
+
+  const dataUri = req.body.imageBase64;
+  const match = /^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/.exec(dataUri || '');
+  if (!match) {
+    return res.status(400).json({ error: 'Expected a base64 image data URI (png/jpeg/webp)' });
+  }
+  const mediaType = `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}`;
+  const base64Data = match[2];
+
+  const prompt = `You're helping identify a trading card from a photo for a card reseller's inventory tool. Look at the card and respond with ONLY a JSON object, no other text, no markdown fences, in exactly this shape:
+{
+  "player": "player or character name, or null if unreadable",
+  "year": "year on the card, or null",
+  "brand": "e.g. Panini Prizm, Topps Chrome, or null",
+  "parallel": "e.g. Silver, Gold /10, Base, or null if not visible",
+  "cardNumber": "e.g. #301, or null",
+  "sport": "e.g. Football, Basketball, Pokemon, or null",
+  "confidence": "high, medium, or low — your honest confidence in this identification",
+  "notes": "one short sentence flagging anything uncertain, or null if none"
+}
+If you genuinely cannot make out the card, set fields to null and confidence to "low" rather than guessing.`;
+
+  try {
+    const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 500,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64Data } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!apiRes.ok) {
+      const errText = await apiRes.text();
+      console.error('Anthropic API error:', apiRes.status, errText);
+      return res.status(502).json({ error: `Card identification service returned an error (${apiRes.status}). Try again in a moment.` });
+    }
+
+    const data = await apiRes.json();
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    if (!textBlock) return res.status(502).json({ error: 'No identification result returned.' });
+
+    let parsed;
+    try {
+      const cleaned = textBlock.text.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      return res.status(502).json({ error: 'Could not parse the identification result.' });
+    }
+
+    res.json(parsed);
+  } catch (err) {
+    console.error('Card scan failed:', err.message);
+    res.status(502).json({ error: 'Could not reach the card identification service. Check your connection and try again.' });
+  }
+});
+
 // ---------- MANUAL CASH ON HAND ----------
 // Not formula-derived — the person types in the real number directly.
 app.put('/api/cash-on-hand', async (req, res) => {
