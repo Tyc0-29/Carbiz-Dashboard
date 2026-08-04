@@ -232,6 +232,71 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   color: rgba(243,239,229,0.5);
 }
 
+.grade-tips {
+  background: var(--paper);
+  border: 1px solid var(--paper-line);
+  border-radius: 5px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+.grade-tips-title {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+.grade-tips ul { margin: 0; padding-left: 18px; color: var(--text-body); }
+.grade-tips li { margin-bottom: 3px; line-height: 1.4; }
+
+.grade-predictions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+.grade-prediction-chip {
+  background: rgba(243,239,229,0.08);
+  border: 1px solid rgba(243,239,229,0.15);
+  border-radius: 5px;
+  padding: 8px 12px;
+  flex: 1;
+  min-width: 100px;
+}
+.grade-prediction-co {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--gold-soft);
+}
+.grade-prediction-range {
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--paper);
+}
+.grade-prediction-note {
+  font-size: 10.5px;
+  color: rgba(243,239,229,0.55);
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.grade-review-headrow {
+  display: grid;
+  grid-template-columns: 90px 1fr 1fr;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(243,239,229,0.4);
+  padding-bottom: 4px;
+}
+.grade-review-row.has-back {
+  grid-template-columns: 90px 1fr 1fr;
+}
 .grade-review-uploads {
   display: flex;
   gap: 10px;

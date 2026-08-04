@@ -1043,26 +1043,53 @@ $('#gr-review-btn').addEventListener('click', async () => {
       : review.worthSubmitting === 'leaning no' ? '#E39B9B' : 'var(--gold)';
     const confColor = review.confidence === 'high' ? 'var(--green)' : review.confidence === 'medium' ? 'var(--gold)' : '#E39B9B';
 
+    const hasBack = !!grBackData;
     const rows = [
-      ['Centering', review.centering?.estimate, review.centering?.note],
-      ['Surface', null, review.surface?.note],
-      ['Corners', null, review.corners?.note],
-      ['Edges', null, review.edges?.note]
+      ['Centering', review.centering?.front?.ratio, review.centering?.front?.note, review.centering?.back?.ratio, review.centering?.back?.note],
+      ['Surface', null, review.surface?.front, null, review.surface?.back],
+      ['Corners', null, review.corners?.front, null, review.corners?.back],
+      ['Edges', null, review.edges?.front, null, review.edges?.back]
     ];
+
+    const companies = ['PSA', 'BGS', 'SGC'];
+    const gradeRows = companies
+      .map(co => [co, review.predictedGrades?.[co]])
+      .filter(([, g]) => g && g.range);
+
+    let qualityWarning = '';
+    if (review.photoQuality?.issues) {
+      qualityWarning = `<div class="scan-status-error" style="margin-bottom:10px;">⚠ ${review.photoQuality.issues}</div>`;
+    }
 
     resultEl.innerHTML = `
       <div class="scan-result-title" style="color:${leanColor};">${(review.worthSubmitting || 'unclear').toUpperCase()} — worth submitting</div>
       <div class="scan-result-confidence" style="color:${confColor};">${review.confidence || 'unknown'} confidence in this read</div>
+      ${qualityWarning}
+      ${gradeRows.length ? `
+        <div class="grade-predictions">
+          ${gradeRows.map(([co, g]) => `
+            <div class="grade-prediction-chip">
+              <div class="grade-prediction-co">${co}</div>
+              <div class="grade-prediction-range">${g.range}</div>
+              ${g.note ? `<div class="grade-prediction-note">${g.note}</div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
       <div class="grade-review-grid">
-        ${rows.map(([label, est, note]) => `
-          <div class="grade-review-row">
-            <div class="grade-review-label">${label}${est ? ` <span class="grade-review-est">(${est})</span>` : ''}</div>
-            <div class="grade-review-note">${note || '—'}</div>
+        <div class="grade-review-headrow">
+          <div></div><div>Front</div>${hasBack ? '<div>Back</div>' : ''}
+        </div>
+        ${rows.map(([label, fEst, fNote, bEst, bNote]) => `
+          <div class="grade-review-row${hasBack ? ' has-back' : ''}">
+            <div class="grade-review-label">${label}</div>
+            <div class="grade-review-note">${fEst ? `<span class="grade-review-est">(${fEst})</span> ` : ''}${fNote || '—'}</div>
+            ${hasBack ? `<div class="grade-review-note">${bEst ? `<span class="grade-review-est">(${bEst})</span> ` : ''}${bNote || '—'}</div>` : ''}
           </div>
         `).join('')}
       </div>
       ${review.overallImpression ? `<div class="scan-result-notes">${review.overallImpression}</div>` : ''}
-      <div class="scan-result-hint">Rough visual read only — not a substitute for actual grading. Always your call.</div>
+      <div class="scan-result-hint">Photo-based estimate only, not an official grade. Actual PSA/BGS/SGC results may differ.</div>
     `;
   } catch (err) {
     resultEl.innerHTML = `<span class="scan-status scan-status-error">${err.message || 'Could not complete the review. Try again.'}</span>`;

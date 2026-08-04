@@ -452,19 +452,30 @@ app.post('/api/grade-review', async (req, res) => {
   }
   const back = req.body.backImageBase64 ? parseDataUri(req.body.backImageBase64) : null;
 
-  const prompt = `You're doing a rough, photo-based pre-grading gut-check for a card reseller deciding whether a card is worth paying to submit for professional grading (PSA/BGS/SGC). This is NOT an official grade and you should not pretend it is — a phone photo cannot show what a grader sees under raking light and magnification (surface scratches, print defects, and true corner wear are often invisible in a photo).
+  const prompt = `You're doing a photo-based pre-grading assessment for a card reseller deciding whether a card is worth paying to submit for professional grading. Real AI grading tools (and human graders) evaluate front and back separately, give numeric centering ratios, and predict differently per grading company since PSA, BGS, and SGC weigh factors differently — BGS is known for stricter corner sub-grading and a tougher effective centering bar (roughly 60/40 front, 75/25 back for a top grade), SGC has a reputation for being strict on corners, PSA is comparatively more forgiving on borderline centering. Reflect those real tendencies in your predictions rather than giving identical numbers across companies.
 
-Look at the photo(s) provided (front, and back if given) and respond with ONLY a JSON object, no other text, no markdown fences, in exactly this shape:
+Be honest about the hard limit of this method: a phone photo cannot show what a grader sees under raking light and 10x magnification. Surface micro-scratches, print lines, and true corner fraying are frequently invisible in a photo even when present. If lighting, glare, angle, or resolution limited what you could actually assess, say so directly in "issues" and lower your confidence, don't guess past what the image shows you.
+
+Respond with ONLY a JSON object, no other text, no markdown fences, in exactly this shape:
 {
-  "centering": { "estimate": "e.g. 60/40 left-right, 55/45 top-bottom, or null if not clearly visible", "note": "one short sentence" },
-  "surface": { "note": "one short sentence on visible scratches, print lines, staining — say 'nothing visible in this photo' if clean, and flag if glare/lighting makes surface hard to judge" },
-  "corners": { "note": "one short sentence — sharp, or visible wear/fraying/whitening" },
-  "edges": { "note": "one short sentence — clean, or visible chipping/whitening" },
+  "photoQuality": { "front": "good, fair, or poor", "back": "good, fair, poor, or not provided", "issues": "note on glare/tilt/blur/lighting if any, or null" },
+  "centering": {
+    "front": { "ratio": "e.g. 60/40 left-right, 55/45 top-bottom, or null if not clearly measurable", "note": "one short sentence" },
+    "back": { "ratio": "same format, or null if no back photo / not measurable", "note": "one short sentence or null" }
+  },
+  "surface": { "front": "one short sentence", "back": "one short sentence or null if no back photo" },
+  "corners": { "front": "one short sentence", "back": "one short sentence or null if no back photo" },
+  "edges": { "front": "one short sentence", "back": "one short sentence or null if no back photo" },
+  "predictedGrades": {
+    "PSA": { "range": "e.g. 7-9", "note": "one short sentence on what's most likely to hold it back, or null" },
+    "BGS": { "range": "e.g. 6.5-8.5", "note": "one short sentence, or null" },
+    "SGC": { "range": "e.g. 7-9", "note": "one short sentence, or null" }
+  },
+  "worthSubmitting": "leaning yes, leaning no, or unclear",
   "overallImpression": "one or two sentence honest summary",
-  "worthSubmitting": "leaning yes, leaning no, or unclear — your honest read on whether this looks strong enough that grading fees are likely worth it, purely based on what's visible",
-  "confidence": "high, medium, or low — how much you could actually assess from this photo (low if lighting/angle/resolution limited what you could see)"
+  "confidence": "high, medium, or low — your honest confidence given photo quality and what a photo can even show"
 }
-Be honest and conservative. If the photo quality, glare, or angle limits what you can assess, say so directly rather than guessing confidently.`;
+Be conservative. Ranges should be genuine ranges (at least 1-2 points wide) reflecting real uncertainty from a photo, not false precision.`;
 
   const content = [
     { type: 'image', source: { type: 'base64', media_type: front.mediaType, data: front.data } }
@@ -484,7 +495,7 @@ Be honest and conservative. If the photo quality, glare, or angle limits what yo
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 700,
+        max_tokens: 1100,
         messages: [{ role: 'user', content }]
       })
     });
