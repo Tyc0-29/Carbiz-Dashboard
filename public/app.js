@@ -1001,6 +1001,77 @@ $$('.scan-input').forEach(input => {
   });
 });
 
+// ---------- Grading pre-review ----------
+let grFrontData = null;
+let grBackData = null;
+
+async function handleGradeUpload(file, slot) {
+  const dataUri = await resizeImageFile(file);
+  if (slot === 'front') {
+    grFrontData = dataUri;
+    $('#gr-front-label').textContent = '✅ Front photo added';
+  } else {
+    grBackData = dataUri;
+    $('#gr-back-label').textContent = '✅ Back photo added';
+  }
+  $('#gr-review-btn').disabled = !grFrontData;
+}
+
+$('#gr-front-input').addEventListener('change', (e) => {
+  if (e.target.files[0]) handleGradeUpload(e.target.files[0], 'front');
+});
+$('#gr-back-input').addEventListener('change', (e) => {
+  if (e.target.files[0]) handleGradeUpload(e.target.files[0], 'back');
+});
+
+$('#gr-review-btn').addEventListener('click', async () => {
+  if (!grFrontData) return;
+  const btn = $('#gr-review-btn');
+  const resultEl = $('#gr-result');
+  btn.disabled = true;
+  btn.textContent = 'Reviewing...';
+  resultEl.classList.remove('hidden');
+  resultEl.innerHTML = `<span class="scan-status">Looking closely at centering, surface, corners, and edges...</span>`;
+
+  try {
+    const review = await api('/api/grade-review', {
+      method: 'POST',
+      body: JSON.stringify({ frontImageBase64: grFrontData, backImageBase64: grBackData })
+    });
+
+    const leanColor = review.worthSubmitting === 'leaning yes' ? 'var(--green)'
+      : review.worthSubmitting === 'leaning no' ? '#E39B9B' : 'var(--gold)';
+    const confColor = review.confidence === 'high' ? 'var(--green)' : review.confidence === 'medium' ? 'var(--gold)' : '#E39B9B';
+
+    const rows = [
+      ['Centering', review.centering?.estimate, review.centering?.note],
+      ['Surface', null, review.surface?.note],
+      ['Corners', null, review.corners?.note],
+      ['Edges', null, review.edges?.note]
+    ];
+
+    resultEl.innerHTML = `
+      <div class="scan-result-title" style="color:${leanColor};">${(review.worthSubmitting || 'unclear').toUpperCase()} — worth submitting</div>
+      <div class="scan-result-confidence" style="color:${confColor};">${review.confidence || 'unknown'} confidence in this read</div>
+      <div class="grade-review-grid">
+        ${rows.map(([label, est, note]) => `
+          <div class="grade-review-row">
+            <div class="grade-review-label">${label}${est ? ` <span class="grade-review-est">(${est})</span>` : ''}</div>
+            <div class="grade-review-note">${note || '—'}</div>
+          </div>
+        `).join('')}
+      </div>
+      ${review.overallImpression ? `<div class="scan-result-notes">${review.overallImpression}</div>` : ''}
+      <div class="scan-result-hint">Rough visual read only — not a substitute for actual grading. Always your call.</div>
+    `;
+  } catch (err) {
+    resultEl.innerHTML = `<span class="scan-status scan-status-error">${err.message || 'Could not complete the review. Try again.'}</span>`;
+  } finally {
+    btn.disabled = !grFrontData;
+    btn.textContent = 'Review this card';
+  }
+});
+
 // ---------- Init ----------
 (async function init() {
   const today = new Date().toISOString().slice(0, 10);

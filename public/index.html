@@ -200,6 +200,22 @@
       </form>
     </details>
     <details class="panel">
+      <summary>Grading Review (beta) — before you submit</summary>
+      <p class="hint">A rough visual gut-check on whether a card looks worth the grading fee — not a real grade. Photos can't show what a grader sees under raking light and magnification, so treat this as a second opinion, not a prediction.</p>
+      <div class="grade-review-uploads">
+        <label class="btn-scan-label grade-upload-slot">
+          <span id="gr-front-label">📷 Front photo (required)</span>
+          <input type="file" accept="image/*" id="gr-front-input" hidden />
+        </label>
+        <label class="btn-scan-label grade-upload-slot">
+          <span id="gr-back-label">📷 Back photo (optional)</span>
+          <input type="file" accept="image/*" id="gr-back-input" hidden />
+        </label>
+      </div>
+      <button type="button" class="btn-primary" id="gr-review-btn" disabled>Review this card</button>
+      <div class="scan-result hidden" id="gr-result"></div>
+    </details>
+    <details class="panel">
       <summary>Grading costs</summary>
       <div class="table-wrap"><table class="data-table" id="grading-table"></table></div>
     </details>

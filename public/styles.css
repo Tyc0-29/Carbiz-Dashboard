@@ -232,6 +232,45 @@ main { padding: 28px 32px 64px; max-width: 1180px; margin: 0 auto; }
   color: rgba(243,239,229,0.5);
 }
 
+.grade-review-uploads {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.grade-upload-slot { margin-bottom: 0; }
+.grade-review-grid {
+  margin: 10px 0;
+  display: grid;
+  gap: 8px;
+}
+.grade-review-row {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(243,239,229,0.1);
+}
+.grade-review-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gold-soft);
+}
+.grade-review-est {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  text-transform: none;
+  color: rgba(243,239,229,0.6);
+  font-size: 10.5px;
+}
+.grade-review-note {
+  font-size: 12.5px;
+  color: rgba(243,239,229,0.9);
+}
+
 /* ---------- Panels ---------- */
 .grid-2 {
   display: grid;

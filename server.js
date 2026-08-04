@@ -428,6 +428,92 @@ If you genuinely cannot make out the card, set fields to null and confidence to 
   }
 });
 
+// ---------- GRADING PRE-REVIEW (AI visual gut-check, not a real grade) ----------
+// Takes front (required) and back (optional) photos and gives a rough read
+// on centering/surface/corners/edges — meant to help decide whether a card
+// is worth paying to submit, not to predict an actual PSA/BGS/SGC number.
+app.post('/api/grade-review', async (req, res) => {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return res.status(400).json({
+      error: 'Card scanning isn\'t set up yet. Add an ANTHROPIC_API_KEY environment variable in Render → your service → Environment, then redeploy.'
+    });
+  }
+
+  const parseDataUri = (uri) => {
+    const m = /^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/.exec(uri || '');
+    if (!m) return null;
+    return { mediaType: `image/${m[1] === 'jpg' ? 'jpeg' : m[1]}`, data: m[2] };
+  };
+
+  const front = parseDataUri(req.body.frontImageBase64);
+  if (!front) {
+    return res.status(400).json({ error: 'A front-of-card photo is required (base64 image data URI).' });
+  }
+  const back = req.body.backImageBase64 ? parseDataUri(req.body.backImageBase64) : null;
+
+  const prompt = `You're doing a rough, photo-based pre-grading gut-check for a card reseller deciding whether a card is worth paying to submit for professional grading (PSA/BGS/SGC). This is NOT an official grade and you should not pretend it is — a phone photo cannot show what a grader sees under raking light and magnification (surface scratches, print defects, and true corner wear are often invisible in a photo).
+
+Look at the photo(s) provided (front, and back if given) and respond with ONLY a JSON object, no other text, no markdown fences, in exactly this shape:
+{
+  "centering": { "estimate": "e.g. 60/40 left-right, 55/45 top-bottom, or null if not clearly visible", "note": "one short sentence" },
+  "surface": { "note": "one short sentence on visible scratches, print lines, staining — say 'nothing visible in this photo' if clean, and flag if glare/lighting makes surface hard to judge" },
+  "corners": { "note": "one short sentence — sharp, or visible wear/fraying/whitening" },
+  "edges": { "note": "one short sentence — clean, or visible chipping/whitening" },
+  "overallImpression": "one or two sentence honest summary",
+  "worthSubmitting": "leaning yes, leaning no, or unclear — your honest read on whether this looks strong enough that grading fees are likely worth it, purely based on what's visible",
+  "confidence": "high, medium, or low — how much you could actually assess from this photo (low if lighting/angle/resolution limited what you could see)"
+}
+Be honest and conservative. If the photo quality, glare, or angle limits what you can assess, say so directly rather than guessing confidently.`;
+
+  const content = [
+    { type: 'image', source: { type: 'base64', media_type: front.mediaType, data: front.data } }
+  ];
+  if (back) {
+    content.push({ type: 'image', source: { type: 'base64', media_type: back.mediaType, data: back.data } });
+  }
+  content.push({ type: 'text', text: prompt + (back ? '\n\n(First image is the front, second is the back.)' : '\n\n(Only the front was provided — note in your notes that the back was not reviewed.)') });
+
+  try {
+    const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 700,
+        messages: [{ role: 'user', content }]
+      })
+    });
+
+    if (!apiRes.ok) {
+      const errText = await apiRes.text();
+      console.error('Anthropic API error:', apiRes.status, errText);
+      return res.status(502).json({ error: `Grading review service returned an error (${apiRes.status}). Try again in a moment.` });
+    }
+
+    const data = await apiRes.json();
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    if (!textBlock) return res.status(502).json({ error: 'No review result returned.' });
+
+    let parsed;
+    try {
+      const cleaned = textBlock.text.replace(/```json|```/g, '').trim();
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      return res.status(502).json({ error: 'Could not parse the review result.' });
+    }
+
+    res.json(parsed);
+  } catch (err) {
+    console.error('Grading review failed:', err.message);
+    res.status(502).json({ error: 'Could not reach the grading review service. Check your connection and try again.' });
+  }
+});
+
 // ---------- MANUAL CASH ON HAND ----------
 // Not formula-derived — the person types in the real number directly.
 app.put('/api/cash-on-hand', async (req, res) => {
