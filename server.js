@@ -793,6 +793,33 @@ app.get('/api/dashboard', (req, res) => {
   const realizedCostBasis = db.sales.reduce((s, s2) => s + costBasisForCard(db, s2.cardId), 0);
   const realizedPnL = +(totalNetProceeds - realizedCostBasis).toFixed(2);
 
+  // "True" P&L split: pre-owned cards have $0 cost by definition, so a sale of
+  // one reads as 100% profit even though no capital was actually deployed.
+  // Splitting this out shows what's really coming from invested capital vs.
+  // liquidating a pre-existing collection.
+  const isPreOwned = (cardId) => {
+    const c = db.cards.find(x => x.id === cardId);
+    return !!(c && c.alreadyOwned);
+  };
+  const purchasedSales = db.sales.filter(s2 => !isPreOwned(s2.cardId));
+  const preOwnedSales = db.sales.filter(s2 => isPreOwned(s2.cardId));
+  const purchasedNetProceeds = purchasedSales.reduce((s, s2) => s + num(s2.netProceeds), 0);
+  const purchasedCostBasis = purchasedSales.reduce((s, s2) => s + costBasisForCard(db, s2.cardId), 0);
+  const purchasedRealizedPnL = +(purchasedNetProceeds - purchasedCostBasis).toFixed(2);
+  const preOwnedNetProceeds = preOwnedSales.reduce((s, s2) => s + num(s2.netProceeds), 0);
+  const preOwnedCostBasis = preOwnedSales.reduce((s, s2) => s + costBasisForCard(db, s2.cardId), 0); // usually $0 unless graded
+  const preOwnedRealizedPnL = +(preOwnedNetProceeds - preOwnedCostBasis).toFixed(2);
+
+  const purchasedAvailable = availableCards.filter(c => !c.alreadyOwned);
+  const preOwnedAvailable = availableCards.filter(c => c.alreadyOwned);
+  const purchasedAvailableCostValue = purchasedAvailable.reduce((s, c) => s + costBasisForCard(db, c.id), 0);
+  const purchasedAvailableEstValue = purchasedAvailable.reduce((s, c) => {
+    return s + (c.estimatedValue !== null && c.estimatedValue !== undefined ? num(c.estimatedValue) : costBasisForCard(db, c.id));
+  }, 0);
+  const preOwnedAvailableEstValue = preOwnedAvailable.reduce((s, c) => {
+    return s + (c.estimatedValue !== null && c.estimatedValue !== undefined ? num(c.estimatedValue) : costBasisForCard(db, c.id));
+  }, 0);
+
   const needsCostReview = db.cards.filter(c => c.needsCostReview).length;
 
   const activeListings = db.listings.filter(l => l.status === 'active').length;
@@ -819,11 +846,20 @@ app.get('/api/dashboard', (req, res) => {
       listedCostValue: +listedCostValue.toFixed(2),
       listedEstimatedValue: +listedEstimatedValue.toFixed(2),
       listedWithEstimate,
-      listedAskingTotal: +listedAskingTotal.toFixed(2)
+      listedAskingTotal: +listedAskingTotal.toFixed(2),
+      purchasedAvailableCount: purchasedAvailable.length,
+      purchasedAvailableCostValue: +purchasedAvailableCostValue.toFixed(2),
+      purchasedAvailableEstValue: +purchasedAvailableEstValue.toFixed(2),
+      preOwnedAvailableCount: preOwnedAvailable.length,
+      preOwnedAvailableEstValue: +preOwnedAvailableEstValue.toFixed(2)
     },
     pnl: {
       realizedCostBasis: +realizedCostBasis.toFixed(2),
-      realizedPnL
+      realizedPnL,
+      purchasedSalesCount: purchasedSales.length,
+      purchasedRealizedPnL,
+      preOwnedSalesCount: preOwnedSales.length,
+      preOwnedRealizedPnL
     },
     cash: {
       cashOnHand: +num(db.manualCashOnHand).toFixed(2)

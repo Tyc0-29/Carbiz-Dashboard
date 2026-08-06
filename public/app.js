@@ -86,6 +86,21 @@ async function loadDashboard() {
     <tr><td><strong>Net proceeds</strong></td><td><strong>${fmt$(d.totals.totalNetProceeds)}</strong></td></tr>
   `;
 
+  $('#true-pnl-grid').innerHTML = `
+    <div class="true-pnl-col">
+      <div class="true-pnl-label">Purchased cards</div>
+      <div class="true-pnl-value ${d.pnl.purchasedRealizedPnL >= 0 ? 'positive' : 'negative'}">${fmt$(d.pnl.purchasedRealizedPnL)}</div>
+      <div class="true-pnl-sub">${d.pnl.purchasedSalesCount} sale${d.pnl.purchasedSalesCount === 1 ? '' : 's'} — real profit on capital you deployed</div>
+      <div class="true-pnl-extra">Available now, at cost: ${fmt$(d.inventory.purchasedAvailableCostValue)} · Est. value: ${fmt$(d.inventory.purchasedAvailableEstValue)}</div>
+    </div>
+    <div class="true-pnl-col true-pnl-preowned">
+      <div class="true-pnl-label">Pre-owned cards</div>
+      <div class="true-pnl-value ${d.pnl.preOwnedRealizedPnL >= 0 ? 'positive' : 'negative'}">${fmt$(d.pnl.preOwnedRealizedPnL)}</div>
+      <div class="true-pnl-sub">${d.pnl.preOwnedSalesCount} sale${d.pnl.preOwnedSalesCount === 1 ? '' : 's'} — from your existing collection, no capital at risk</div>
+      <div class="true-pnl-extra">${d.inventory.preOwnedAvailableCount} still unsold, est. value: ${fmt$(d.inventory.preOwnedAvailableEstValue)}</div>
+    </div>
+  `;
+
   $('#snapshot-table').innerHTML = `
     <tr><td>Total purchase cost</td><td>${fmt$(d.totals.totalPurchaseCost)}</td></tr>
     <tr><td>Total grading cost</td><td>${fmt$(d.totals.totalGradingCost)}</td></tr>
