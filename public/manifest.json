@@ -1,4 +1,5 @@
 {
+  "_comment": "REBRANDING: change name, short_name, description, and colors below to your own",
   "name": "TyCo Trading — Cardbiz",
   "short_name": "Cardbiz",
   "description": "Live P&L dashboard for TyCo Trading",

@@ -1,3 +1,5 @@
+/* REBRANDING: change these hex values to your own brand colors — everything
+   in the app follows from these, no other CSS edits needed for a color swap */
 :root {
   --ink: #14342B;            /* deep forest — headers, strong text */
   --ink-soft: #1F4A3A;
