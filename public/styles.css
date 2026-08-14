@@ -904,3 +904,14 @@ select.inline-edit.status-chip {
   padding: 20px 0 40px;
   opacity: 0.6;
 }
+
+.help-steps {
+  margin: 0;
+  padding-left: 22px;
+}
+.help-steps li {
+  margin-bottom: 12px;
+  line-height: 1.5;
+  color: var(--text-body);
+}
+.help-steps li:last-child { margin-bottom: 0; }

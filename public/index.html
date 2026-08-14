@@ -36,6 +36,8 @@
     <button class="tab" data-tab="sales">Sales</button>
     <button class="tab" data-tab="display-case">Display Case</button>
     <button class="tab" data-tab="import">Bulk Import</button>
+    <button class="tab" data-tab="settings">Settings</button>
+    <button class="tab" data-tab="help">Help</button>
   </nav>
   <a href="/api/export" download class="export-link">Export data ⬇</a>
 </header>
@@ -379,6 +381,28 @@
       </div>
       <div id="restore-status" class="hint"></div>
     </div>
+  </section>
+
+  <!-- DISPLAY CASE -->
+  <section class="view" id="view-display-case">
+    <details class="panel">
+      <summary>Add to Display Case</summary>
+      <p class="hint">Pick a card you're holding long-term, add a photo, and it'll show up below styled like it's on display.</p>
+      <form id="form-display" class="form-grid">
+        <span class="searchable-select">
+          <input type="text" id="display-card-input" class="card-search-input" list="display-card-list" placeholder="Search cards..." autocomplete="off" required />
+          <datalist id="display-card-list"></datalist>
+          <input type="hidden" name="cardId" id="display-card-select" />
+        </span>
+        <input type="file" id="display-photo-input" accept="image/*" class="file-input-plain" />
+        <button type="submit" class="btn-primary">Add to case</button>
+      </form>
+    </details>
+    <div id="display-case-gallery" class="display-case-gallery"></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
     <div class="panel">
       <h3>Branding</h3>
       <p class="hint">Make this your own — no code editing needed. Changes apply immediately and are saved with your data.</p>
@@ -404,25 +428,76 @@
     </div>
   </section>
 
-  <!-- DISPLAY CASE -->
-  <section class="view" id="view-display-case">
-    <details class="panel">
-      <summary>Add to Display Case</summary>
-      <p class="hint">Pick a card you're holding long-term, add a photo, and it'll show up below styled like it's on display.</p>
-      <form id="form-display" class="form-grid">
-        <span class="searchable-select">
-          <input type="text" id="display-card-input" class="card-search-input" list="display-card-list" placeholder="Search cards..." autocomplete="off" required />
-          <datalist id="display-card-list"></datalist>
-          <input type="hidden" name="cardId" id="display-card-select" />
-        </span>
-        <input type="file" id="display-photo-input" accept="image/*" class="file-input-plain" />
-        <button type="submit" class="btn-primary">Add to case</button>
-      </form>
-    </details>
-    <div id="display-case-gallery" class="display-case-gallery"></div>
-  </section>
+  <!-- HELP -->
+  <section class="view" id="view-help">
+    <div class="panel">
+      <h3>Start here</h3>
+      <p class="hint" style="margin-bottom:0;">Everything below is collapsible — tap a heading to open it. Come back to this tab any time something's unclear.</p>
+    </div>
 
-  <div class="build-marker">disk persistence re-test — Aug 14, round 2</div>
+    <details class="panel">
+      <summary>The five things to do first</summary>
+      <ol class="help-steps">
+        <li><strong>Add a purchase.</strong> Inventory tab → "Add a purchase." This is how every card enters the system.</li>
+        <li><strong>List something.</strong> Listings tab → "Add a listing," pick the card you just added.</li>
+        <li><strong>Record a sale.</strong> Sales tab → "Record a sale," once something actually sells.</li>
+        <li><strong>Set your cash on hand.</strong> Dashboard → tap the Cash on Hand number → type your real balance. This is manual on purpose, not calculated.</li>
+        <li><strong>Check the Dashboard.</strong> That's your scoreboard — real P&amp;L, real inventory value, updated automatically from everything above.</li>
+      </ol>
+    </details>
+
+    <details class="panel">
+      <summary>Dashboard</summary>
+      <p>Your live scoreboard. Realized P&amp;L, cash on hand, current inventory value (at cost and at estimated market value), listed total, and total invested.</p>
+      <p><strong>True P&amp;L</strong> separates profit from cards you actually paid for vs. cards you already owned before you started tracking — pre-owned cards have no real cost, so this keeps that from inflating your numbers.</p>
+      <p style="margin-bottom:0;"><strong>Cash on hand</strong> is a number you type in yourself. It is not calculated from your sales — tap it any time your real balance changes.</p>
+    </details>
+
+    <details class="panel">
+      <summary>Performance</summary>
+      <p style="margin-bottom:0;">Pick a date range (or use the quick presets) to see revenue, profit, and a chart of net proceeds for just that window — useful for "how did this month actually go" instead of only all-time totals.</p>
+    </details>
+
+    <details class="panel">
+      <summary>Inventory</summary>
+      <p>Every card you own. Cost basis, status (in hand / listed / sold), and an estimated value you set yourself.</p>
+      <p><strong>Scan a card</strong> — take or upload a photo and it auto-fills the player/sport into the Add Purchase form.</p>
+      <p style="margin-bottom:0;"><strong>Grading Review</strong> — upload front (and ideally back) photos of a card to get a rough read on centering, surface, corners, and edges before paying to submit it for real grading. This is an estimate, not an official grade.</p>
+    </details>
+
+    <details class="panel">
+      <summary>Listings</summary>
+      <p style="margin-bottom:0;">Everything currently listed for sale, sorted by highest asking price. Add a listing for any card in your inventory, or add a brand-new card on the spot if it wasn't tracked yet.</p>
+    </details>
+
+    <details class="panel">
+      <summary>Sales</summary>
+      <p style="margin-bottom:0;">Every completed sale, sorted most recent first. Net proceeds (what actually landed in your account after fees) calculate automatically from the sale price and fees you enter.</p>
+    </details>
+
+    <details class="panel">
+      <summary>Display Case</summary>
+      <p style="margin-bottom:0;">A separate space for cards you're holding long-term rather than flipping. Add a photo, watch its estimated value over time. Kept deliberately out of your regular P&amp;L math, since these aren't part of your working capital.</p>
+    </details>
+
+    <details class="panel">
+      <summary>Bulk Import</summary>
+      <p>CSV templates for purchases, sales, and listings if you have a lot to enter at once — download a template, fill it in, upload it back. You can also paste rows directly without a file.</p>
+      <p style="margin-bottom:0;"><strong>Automatic backups</strong> run daily. <strong>Restore from backup</strong> lets you roll back to any saved backup, or a file you exported yourself, if something ever needs undoing.</p>
+    </details>
+
+    <details class="panel">
+      <summary>Settings</summary>
+      <p style="margin-bottom:0;">Business name, tagline, and colors — changes apply immediately, no code editing required. A fully custom logo image still needs a file swap in GitHub; see the README for exactly which files.</p>
+    </details>
+
+    <details class="panel">
+      <summary>Troubleshooting</summary>
+      <p><strong>Something looks wrong or a number seems off:</strong> check the specific card or sale entry first — most issues trace back to one entry, not the whole system.</p>
+      <p><strong>Data looks missing or wiped:</strong> go to Bulk Import → Restore from backup immediately. Don't add new data first — restore, then re-add anything from after the backup's date.</p>
+      <p style="margin-bottom:0;"><strong>The AI scan or grading review says "not set up yet":</strong> this feature needs an Anthropic API key added to your Render environment variables — see the README for how.</p>
+    </details>
+  </section>
 
 </main>
 
