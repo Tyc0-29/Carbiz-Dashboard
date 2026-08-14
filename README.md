@@ -34,15 +34,36 @@ Then open http://localhost:3000. Data is stored in `data/db.json`, created autom
 
 ## Deploying your own copy
 
-This is built to deploy on [Render](https://render.com) (or any Node host) for free/cheap:
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Tyc0-29/Carbiz-Dashboard)
+
+Click the button above. Render will ask you to connect your GitHub account (creates a free Render
+account if you don't have one), then walks you through creating your own separate copy — your own
+repo, your own service, your own data. The persistent disk is configured automatically as part of
+this, at the correct path, so there's no manual disk setup step to miss.
+
+You'll be prompted for one optional field:
+
+- **ANTHROPIC_API_KEY** — only needed if you want the AI card-scanning and grading-review features.
+  Leave it blank to skip those for now; you can add it later in Render → Environment. Get a key at
+  console.anthropic.com — new accounts get free trial credit, no card required.
+
+That's it. A few minutes later you'll have a live URL running your own instance.
+
+**Note:** the persistent disk requires a paid Render plan (currently the Starter tier, a few dollars
+a month) — Render's free tier doesn't support persistent disks, and without one your data would be
+wiped on every deploy. This isn't optional for this app.
+
+<details>
+<summary>Manual setup instead (if you'd rather not use the button)</summary>
 
 1. Click **Use this template** on GitHub (or fork this repo) into your own account
 2. On Render: New → Web Service → connect your new repo
-3. Add a **persistent disk** mounted at `data/` — without this, your data will be wiped on every
-   deploy. This is the single most important setup step.
-4. Optional: add an `ANTHROPIC_API_KEY` environment variable to enable AI card scanning and grading
-   review (get one at console.anthropic.com — new accounts get free trial credit, no card required)
-5. Deploy. That's it.
+3. Add a **persistent disk** mounted at `/opt/render/project/src/data` — without this, your data
+   will be wiped on every deploy
+4. Optional: add an `ANTHROPIC_API_KEY` environment variable
+5. Deploy
+
+</details>
 
 ## Rebranding to your own name/colors
 

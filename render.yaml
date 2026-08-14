@@ -1,0 +1,22 @@
+# Render Blueprint — one-click deploy with the persistent disk baked in.
+# This is exactly the piece that was missing every other time: the disk is
+# declared here, in the correct location, so it's provisioned automatically
+# on first deploy instead of depending on a manual dashboard step.
+services:
+  - type: web
+    name: cardbiz
+    runtime: node
+    plan: starter
+    # Deliberately off: without this, a push to the TEMPLATE repo would
+    # redeploy everyone's individual instance. Each person's copy should
+    # only redeploy when THEY push to THEIR own repo.
+    autoDeploy: false
+    buildCommand: npm install
+    startCommand: npm start
+    disk:
+      name: cardbiz-data
+      mountPath: /opt/render/project/src/data
+      sizeGB: 1
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
