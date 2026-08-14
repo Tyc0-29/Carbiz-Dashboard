@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { readDb, writeDb, genId, DB_PATH } = require('./store');
+const { readDb, writeDb, genId, DB_PATH, DEFAULT_BRANDING } = require('./store');
 
 const app = express();
 app.use(express.json({ limit: '15mb' }));
@@ -523,6 +523,42 @@ Be conservative. Ranges should be genuine ranges (at least 1-2 points wide) refl
     console.error('Grading review failed:', err.message);
     res.status(502).json({ error: 'Could not reach the grading review service. Check your connection and try again.' });
   }
+});
+
+// ---------- BRANDING (in-app customization, no code editing required) ----------
+app.get('/api/branding', (req, res) => {
+  res.json(readDb().branding);
+});
+
+const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
+
+app.put('/api/branding', async (req, res) => {
+  const db = readDb();
+  const body = req.body || {};
+  const next = { ...db.branding };
+
+  if (typeof body.businessName === 'string' && body.businessName.trim()) {
+    next.businessName = body.businessName.trim().slice(0, 40);
+  }
+  if (typeof body.tagline === 'string') {
+    next.tagline = body.tagline.trim().slice(0, 30).toUpperCase();
+  }
+  for (const field of ['colorInk', 'colorGold', 'colorPaper']) {
+    if (typeof body[field] === 'string' && HEX_RE.test(body[field])) {
+      next[field] = body[field];
+    }
+  }
+
+  db.branding = next;
+  await writeDb(db);
+  res.json(db.branding);
+});
+
+app.post('/api/branding/reset', async (req, res) => {
+  const db = readDb();
+  db.branding = { ...DEFAULT_BRANDING };
+  await writeDb(db);
+  res.json(db.branding);
 });
 
 // ---------- MANUAL CASH ON HAND ----------

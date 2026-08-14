@@ -3,13 +3,22 @@ const path = require('path');
 
 const DB_PATH = path.join(__dirname, 'data', 'db.json');
 
+const DEFAULT_BRANDING = {
+  businessName: 'Cardbiz',
+  tagline: 'TRADING',
+  colorInk: '#14342B',
+  colorGold: '#C6952F',
+  colorPaper: '#F3EFE5'
+};
+
 const EMPTY_DB = {
   cards: [],       // { id, player, sport, purchaseDate, cost, source, status, notes, createdAt, displayCase, photoUrl }
   listings: [],     // { id, cardId, platform, listPrice, listDate, ebayListingId, status, notes }
   sales: [],         // { id, cardId, platform, salePrice, shippingCharged, fees, shippingPaid, netProceeds, saleDate, buyer, orderId, notes }
   gradingCosts: [],  // { id, cardId, company, grade, cost, date }
   cashAdjustments: [], // legacy — no longer used by the UI, kept only so old data isn't deleted
-  manualCashOnHand: 0  // user-entered figure, not formula-derived
+  manualCashOnHand: 0,  // user-entered figure, not formula-derived
+  branding: { ...DEFAULT_BRANDING } // in-app customization — business name, tagline, colors
 };
 
 function ensureDb() {
@@ -30,6 +39,11 @@ function readDb() {
       if (Array.isArray(EMPTY_DB[key]) && !Array.isArray(parsed[key])) parsed[key] = [];
     }
     if (typeof parsed.manualCashOnHand !== 'number') parsed.manualCashOnHand = 0;
+    if (typeof parsed.branding !== 'object' || parsed.branding === null) {
+      parsed.branding = { ...DEFAULT_BRANDING };
+    } else {
+      parsed.branding = { ...DEFAULT_BRANDING, ...parsed.branding };
+    }
     return parsed;
   } catch (e) {
     return JSON.parse(JSON.stringify(EMPTY_DB));
@@ -49,4 +63,4 @@ function genId(prefix) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-module.exports = { readDb, writeDb, genId, DB_PATH };
+module.exports = { readDb, writeDb, genId, DB_PATH, DEFAULT_BRANDING };

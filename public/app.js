@@ -1114,8 +1114,71 @@ $('#gr-review-btn').addEventListener('click', async () => {
   }
 });
 
+// ---------- Branding (in-app customization) ----------
+function applyBranding(b) {
+  document.title = `Cardbiz — ${b.businessName}`;
+  const metaTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+  if (metaTitle) metaTitle.setAttribute('content', b.businessName);
+  const nameEl = $('.brand-name');
+  const subEl = $('.brand-sub');
+  if (nameEl) nameEl.textContent = b.businessName;
+  if (subEl) subEl.textContent = b.tagline;
+
+  const root = document.documentElement.style;
+  root.setProperty('--ink', b.colorInk);
+  root.setProperty('--ink-soft', b.colorInk);
+  root.setProperty('--red', b.colorInk);
+  root.setProperty('--red-dark', b.colorInk);
+  root.setProperty('--gold', b.colorGold);
+  root.setProperty('--gold-soft', b.colorGold);
+  root.setProperty('--paper', b.colorPaper);
+
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) themeMeta.setAttribute('content', b.colorInk);
+}
+
+async function loadBranding() {
+  const b = await api('/api/branding');
+  applyBranding(b);
+  if ($('#brand-name-input')) {
+    $('#brand-name-input').value = b.businessName;
+    $('#brand-tagline-input').value = b.tagline;
+    $('#brand-ink-input').value = b.colorInk;
+    $('#brand-gold-input').value = b.colorGold;
+    $('#brand-paper-input').value = b.colorPaper;
+  }
+}
+
+if ($('#form-branding')) {
+  $('#form-branding').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const body = {
+      businessName: $('#brand-name-input').value,
+      tagline: $('#brand-tagline-input').value,
+      colorInk: $('#brand-ink-input').value,
+      colorGold: $('#brand-gold-input').value,
+      colorPaper: $('#brand-paper-input').value
+    };
+    const b = await api('/api/branding', { method: 'PUT', body: JSON.stringify(body) });
+    applyBranding(b);
+  });
+
+  $('#brand-reset-btn').addEventListener('click', async () => {
+    if (!confirm('Reset business name, tagline, and colors back to the default?')) return;
+    const b = await api('/api/branding/reset', { method: 'POST' });
+    applyBranding(b);
+    $('#brand-name-input').value = b.businessName;
+    $('#brand-tagline-input').value = b.tagline;
+    $('#brand-ink-input').value = b.colorInk;
+    $('#brand-gold-input').value = b.colorGold;
+    $('#brand-paper-input').value = b.colorPaper;
+  });
+}
+
 // ---------- Init ----------
 (async function init() {
+  await loadBranding();
+
   const today = new Date().toISOString().slice(0, 10);
   $('input[name="purchaseDate"]').value = today;
   $('input[name="listDate"]').value = today;

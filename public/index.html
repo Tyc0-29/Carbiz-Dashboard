@@ -379,6 +379,29 @@
       </div>
       <div id="restore-status" class="hint"></div>
     </div>
+    <div class="panel">
+      <h3>Branding</h3>
+      <p class="hint">Make this your own — no code editing needed. Changes apply immediately and are saved with your data.</p>
+      <form id="form-branding" class="form-grid">
+        <input type="text" id="brand-name-input" placeholder="Business name" maxlength="40" />
+        <input type="text" id="brand-tagline-input" placeholder="Tagline (short, e.g. TRADING)" maxlength="30" />
+        <div class="brand-color-field">
+          <label for="brand-ink-input">Primary color</label>
+          <input type="color" id="brand-ink-input" />
+        </div>
+        <div class="brand-color-field">
+          <label for="brand-gold-input">Accent color</label>
+          <input type="color" id="brand-gold-input" />
+        </div>
+        <div class="brand-color-field">
+          <label for="brand-paper-input">Background color</label>
+          <input type="color" id="brand-paper-input" />
+        </div>
+        <button type="submit" class="btn-primary">Save branding</button>
+        <button type="button" class="link-btn" id="brand-reset-btn">Reset to defaults</button>
+      </form>
+      <p class="hint" style="margin-top:14px; margin-bottom:0;">Want a fully custom logo image (not just colors)? That still means swapping image files in GitHub — see the README for exactly which files.</p>
+    </div>
   </section>
 
   <!-- DISPLAY CASE -->
