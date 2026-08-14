@@ -873,3 +873,11 @@ select.inline-edit.status-chip {
   }
   .data-table td.cell-title::before { content: none; }
 }
+
+.build-marker {
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 20px 0 40px;
+  opacity: 0.6;
+}
