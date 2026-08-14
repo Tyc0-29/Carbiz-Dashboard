@@ -1,8 +1,8 @@
 # Cardbiz
 
 A live P&L dashboard for a sports card buying/selling business — inventory, listings, sales,
-grading costs, AI card scanning, AI grading pre-review, and a Display Case for long-term holds.
-Built to run as your own private instance; nothing here is a hosted service.
+grading costs, and a Display Case for long-term holds. Built to run as your own private instance;
+nothing here is a hosted service.
 
 ## What it tracks
 
@@ -14,14 +14,13 @@ Built to run as your own private instance; nothing here is a hosted service.
 - **Display Case** — a separate space for cards you're holding long-term, photos included, kept out
   of your day-to-day P&L math
 - **Performance** — date-range filtered revenue, P&L, and a chart of net proceeds over time
-- **AI card scanning** — photograph a card and auto-fill player/sport into the purchase form
-- **AI grading pre-review** — a photo-based read on centering, surface, corners, and edges before
-  you pay to submit a card for real grading (not a substitute for an actual grade — see in-app disclaimers)
 - **True P&L breakdown** — separates profit from cards you actually paid for vs. cards you already
   owned before tracking, since pre-owned cards carry no real cost basis
 - **Manual cash on hand** — a number you type in yourself, not a formula
 - **Bulk import** — CSV templates for purchases, sales, and listings; paste rows directly, no file needed
 - **Backups & restore** — automatic daily snapshots, plus a manual export/restore you control
+- **In-app Branding** — business name, tagline, and colors, changeable right in the app, no code editing
+- **In-app Help** — a full usage guide built into the site itself (the Help tab)
 
 ## Running it
 
@@ -41,13 +40,7 @@ account if you don't have one), then walks you through creating your own separat
 repo, your own service, your own data. The persistent disk is configured automatically as part of
 this, at the correct path, so there's no manual disk setup step to miss.
 
-You'll be prompted for one optional field:
-
-- **ANTHROPIC_API_KEY** — only needed if you want the AI card-scanning and grading-review features.
-  Leave it blank to skip those for now; you can add it later in Render → Environment. Get a key at
-  console.anthropic.com — new accounts get free trial credit, no card required.
-
-That's it. A few minutes later you'll have a live URL running your own instance.
+That's it — no other setup fields. A few minutes later you'll have a live URL running your own instance.
 
 **Note:** the persistent disk requires a paid Render plan (currently the Starter tier, a few dollars
 a month) — Render's free tier doesn't support persistent disks, and without one your data would be
@@ -57,25 +50,20 @@ wiped on every deploy. This isn't optional for this app.
 <summary>Manual setup instead (if you'd rather not use the button)</summary>
 
 1. Click **Use this template** on GitHub (or fork this repo) into your own account
-2. On Render: New → Web Service → connect your new repo
-3. Add a **persistent disk** mounted at `/opt/render/project/src/data` — without this, your data
-   will be wiped on every deploy
-4. Optional: add an `ANTHROPIC_API_KEY` environment variable
-5. Deploy
+2. On Render: New → Blueprint → connect your new repo (not "New → Web Service" — Blueprint is what
+   reads the disk configuration automatically)
+3. Deploy
 
 </details>
 
-## Rebranding to your own name/colors
+## Making it yours
 
-Everything visual is centralized so this takes a few minutes, not a code rewrite:
+Business name, tagline, and colors are all changeable **inside the app itself** — open it, go to the
+**Branding** tab, no code editing required. Changes apply immediately and are saved with your data.
 
-- **Colors**: `public/styles.css`, top of the file, inside `:root { }` — change the hex values,
-  every color in the app follows from these
-- **Business name**: search for `TyCo` across `public/index.html` (page title, header) and
-  `public/manifest.json` (app name/description) — replace with your own
-- **Logo/icon**: swap `public/brand-fan.png`, `public/favicon-32.png`, `public/favicon-64.png`,
-  `public/apple-touch-icon.png`, and `public/icons/icon-192.png` / `icon-512.png` with your own images
-  at the same filenames and dimensions
+A fully custom logo image is the one thing that still needs a manual file swap: replace
+`public/brand-fan.png`, the favicon files, `apple-touch-icon.png`, and the files in `public/icons/`
+with your own images, using the exact same filenames.
 
 ## License — read this before you deploy
 

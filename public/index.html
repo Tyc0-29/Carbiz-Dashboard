@@ -36,7 +36,7 @@
     <button class="tab" data-tab="sales">Sales</button>
     <button class="tab" data-tab="display-case">Display Case</button>
     <button class="tab" data-tab="import">Bulk Import</button>
-    <button class="tab" data-tab="settings">Settings</button>
+    <button class="tab" data-tab="branding">Branding</button>
     <button class="tab" data-tab="help">Help</button>
   </nav>
   <a href="/api/export" download class="export-link">Export data ⬇</a>
@@ -164,13 +164,6 @@
         <input type="checkbox" id="already-owned" />
         Already owned this — didn't pay cash for it (gift, trade, had it before tracking)
       </label>
-      <div class="scan-widget">
-        <label class="btn-scan-label">
-          📷 Scan a card to fill this in
-          <input type="file" accept="image/*" class="scan-input" data-scan-target="purchase" hidden />
-        </label>
-        <div class="scan-result hidden" data-scan-result="purchase"></div>
-      </div>
       <form id="form-card" class="form-grid">
         <input type="text" name="player" id="card-player-field" placeholder="Player / card name" required />
         <input type="text" name="sport" id="card-sport-field" placeholder="Sport (MLB, NFL, WNBA...)" />
@@ -210,31 +203,6 @@
       </form>
     </details>
     <details class="panel">
-      <summary>Grading Review (beta) — before you submit</summary>
-      <p class="hint">A photo-based read on centering, surface, corners, and edges, front and back, with rough per-company grade ranges. This is an estimate to help you decide what's worth the submission fee, not an official grade.</p>
-      <div class="grade-tips">
-        <div class="grade-tips-title">For the best read:</div>
-        <ul>
-          <li>Flat, even lighting — no flash glare, a plain neutral background</li>
-          <li>Camera held parallel to the card, not tilted (tilt throws off centering)</li>
-          <li>Card fills the frame with a small margin, both corners fully visible</li>
-          <li>Back photo strongly recommended — back centering is graded separately and affects the result</li>
-        </ul>
-      </div>
-      <div class="grade-review-uploads">
-        <label class="btn-scan-label grade-upload-slot">
-          <span id="gr-front-label">📷 Front photo (required)</span>
-          <input type="file" accept="image/*" id="gr-front-input" hidden />
-        </label>
-        <label class="btn-scan-label grade-upload-slot">
-          <span id="gr-back-label">📷 Back photo (recommended)</span>
-          <input type="file" accept="image/*" id="gr-back-input" hidden />
-        </label>
-      </div>
-      <button type="button" class="btn-primary" id="gr-review-btn" disabled>Review this card</button>
-      <div class="scan-result hidden" id="gr-result"></div>
-    </details>
-    <details class="panel">
       <summary>Grading costs</summary>
       <div class="table-wrap"><table class="data-table" id="grading-table"></table></div>
     </details>
@@ -265,13 +233,6 @@
         <input type="date" name="listDate" required />
         <input type="text" name="ebayListingId" placeholder="eBay listing ID (optional)" />
         <div id="quick-add-listing-card" class="quick-add hidden">
-          <div class="scan-widget">
-            <label class="btn-scan-label">
-              📷 Scan a card to fill this in
-              <input type="file" accept="image/*" class="scan-input" data-scan-target="listing" hidden />
-            </label>
-            <div class="scan-result hidden" data-scan-result="listing"></div>
-          </div>
           <input type="text" id="new-listing-card-player" placeholder="New card name" />
           <input type="text" id="new-listing-card-sport" placeholder="Sport (optional)" />
           <input type="number" step="0.01" id="new-listing-card-cost" placeholder="What you paid (optional, defaults to $0)" />
@@ -304,13 +265,6 @@
         <input type="text" name="buyer" placeholder="Buyer (optional)" />
         <input type="text" name="orderId" placeholder="Order ID (optional)" />
         <div id="quick-add-card" class="quick-add hidden">
-          <div class="scan-widget">
-            <label class="btn-scan-label">
-              📷 Scan a card to fill this in
-              <input type="file" accept="image/*" class="scan-input" data-scan-target="sale" hidden />
-            </label>
-            <div class="scan-result hidden" data-scan-result="sale"></div>
-          </div>
           <input type="text" id="new-card-player" placeholder="New card name" />
           <input type="text" id="new-card-sport" placeholder="Sport (optional)" />
           <input type="number" step="0.01" id="new-card-cost" placeholder="What you paid (optional, defaults to $0)" />
@@ -402,7 +356,7 @@
   </section>
 
   <!-- SETTINGS -->
-  <section class="view" id="view-settings">
+  <section class="view" id="view-branding">
     <div class="panel">
       <h3>Branding</h3>
       <p class="hint">Make this your own — no code editing needed. Changes apply immediately and are saved with your data.</p>
@@ -460,9 +414,7 @@
 
     <details class="panel">
       <summary>Inventory</summary>
-      <p>Every card you own. Cost basis, status (in hand / listed / sold), and an estimated value you set yourself.</p>
-      <p><strong>Scan a card</strong> — take or upload a photo and it auto-fills the player/sport into the Add Purchase form.</p>
-      <p style="margin-bottom:0;"><strong>Grading Review</strong> — upload front (and ideally back) photos of a card to get a rough read on centering, surface, corners, and edges before paying to submit it for real grading. This is an estimate, not an official grade.</p>
+      <p style="margin-bottom:0;">Every card you own. Cost basis, status (in hand / listed / sold), and an estimated value you set yourself. Use the search box and status checkboxes to filter, or tap Edit on any card to change its details.</p>
     </details>
 
     <details class="panel">
@@ -487,15 +439,14 @@
     </details>
 
     <details class="panel">
-      <summary>Settings</summary>
+      <summary>Branding</summary>
       <p style="margin-bottom:0;">Business name, tagline, and colors — changes apply immediately, no code editing required. A fully custom logo image still needs a file swap in GitHub; see the README for exactly which files.</p>
     </details>
 
     <details class="panel">
       <summary>Troubleshooting</summary>
       <p><strong>Something looks wrong or a number seems off:</strong> check the specific card or sale entry first — most issues trace back to one entry, not the whole system.</p>
-      <p><strong>Data looks missing or wiped:</strong> go to Bulk Import → Restore from backup immediately. Don't add new data first — restore, then re-add anything from after the backup's date.</p>
-      <p style="margin-bottom:0;"><strong>The AI scan or grading review says "not set up yet":</strong> this feature needs an Anthropic API key added to your Render environment variables — see the README for how.</p>
+      <p style="margin-bottom:0;"><strong>Data looks missing or wiped:</strong> go to Bulk Import → Restore from backup immediately. Don't add new data first — restore, then re-add anything from after the backup's date.</p>
     </details>
   </section>
 
